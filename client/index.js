@@ -61,7 +61,7 @@ function jsload() {
 function firstLoad() {
   $(document).tooltip({ track: true });
   SOCKET.secure=startCONFIG.websock_secure;
-  ENGINE.login=startCONFIG.default_login;ENGINE.pass=startCONFIG..default_pass;
+  ENGINE.login=startCONFIG.default_login;ENGINE.pass=startCONFIG.default_pass;
   //ENGINE.create('http://192.168.0.2/',$('#myc'), 600, 340);
   var myul=window.location.href.replace('index.html','');
   ENGINE.create(myul,$('#myc'),600,340,()=>{
