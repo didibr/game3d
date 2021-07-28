@@ -310,7 +310,9 @@ ENGINE.Physic = {
 
         if (playerobj) {
           ANIMATED.change(login, 'idle', 10);
-          if(ENGINE.GAME._audioslist[login].snstep && 
+          if(
+             ENGINE.GAME._audioslist[login] &&
+             ENGINE.GAME._audioslist[login].snstep && 
              ENGINE.GAME._audioslist[login].snstep.isPlaying==true)
              ENGINE.GAME._audioslist[login].snstep.stop();
         }
@@ -325,7 +327,9 @@ ENGINE.Physic = {
         }
         if (playerobj && running == false && playerobj.active != 'walk') {
           ANIMATED.change(login, 'walk', 10);
-          if(ENGINE.GAME._audioslist[login].snstep && 
+          if(
+            ENGINE.GAME._audioslist[login] &&
+            ENGINE.GAME._audioslist[login].snstep && 
             ENGINE.GAME._audioslist[login].snstep.isPlaying!=true)
             ENGINE.GAME._audioslist[login].snstep.play();
         }
