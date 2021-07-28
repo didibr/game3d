@@ -55,7 +55,7 @@ function jsload() {
 
 function firstLoad() {
   $(document).tooltip({ track: true });
-  SOCKET.secure=false;
+  SOCKET.secure=true;
   ENGINE.login='didi';ENGINE.pass='1234';
   //ENGINE.create('http://192.168.0.2/',$('#myc'), 600, 340);
   var myul=window.location.href.replace('index.html','');
