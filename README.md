@@ -25,7 +25,7 @@ WebServer html port in 'main.js' line 16
  | const WebPort= 8080;
  ```
 
-Browser Side configuration if use HTTPS ou HTTP for secure sockets
+Browser Side configuration if use HTTPS or HTTP for secure sockets
 in '/client/index.js' line 3
 ```js
  | websock_secure : true
@@ -40,12 +40,20 @@ in '/client/index.js' line 3
 - Entity Editor ( models with skelleton ) similar of mixamo .fbx
 - Actor Editor ( spawn points and teleports )
 - Light Editor (point, spot, ambiend ), put all togueter and create a map
+- Minimum use of 3rd part modules on nodejs, most vanila implementation
+- Real time Multiplayer with websocket
 
 ### Using
 - Three.js
 - Ammo.js
 - Jquery
 - Jquery.ui
-- 
+
+### to do for now
+- calibrate dinamic camera
+- audio point and ambient fixes
+- fix some glitch on ground with physic body walk/run
+- implement actor live movimentation and contact response
+
 
 

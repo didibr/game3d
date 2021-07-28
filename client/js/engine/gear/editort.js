@@ -618,6 +618,8 @@ ENGINE.EDITORT = {
         }
       }
       val._Attached=HELPER.boneatachedClean(val._Attached);
+      if(val._Texture && val._Texture!=_UN)
+      val._Texture=val._Texture.replace(ENGINE.url,'./');      
       var item = new ENGINE.EDITORT.variables();
       HELPER.updateArray(item, val);
       //item._Pos = xpos;

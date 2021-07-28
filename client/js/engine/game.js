@@ -624,6 +624,7 @@ ENGINE.GAME = {
   //_audioslist
   //################ AUDIOS LOADER #################
   _cacheEntityAudios: function (entityName, audios, dummy) {
+return;//fixing    
     if (typeof (audios) == _UN) return;
     for (var i = 0; i < audios.length; i++) {
       if (typeof (this._audioslist[entityName]) == 'undefined') this._audioslist[entityName] = [];
