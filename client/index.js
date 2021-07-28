@@ -1,3 +1,8 @@
+var startCONFIG={ //Initial configuration for browser
+  websock_secure : true,
+  default_login  : 'didi',
+  default_pass   : '1234'  
+}
 
 var starter = setInterval(function () { //waiting shadders loaded
   if (typeof (SHADER) !== "undefined") {
@@ -55,8 +60,8 @@ function jsload() {
 
 function firstLoad() {
   $(document).tooltip({ track: true });
-  SOCKET.secure=false;
-  ENGINE.login='didi';ENGINE.pass='1234';
+  SOCKET.secure=startCONFIG.websock_secure;
+  ENGINE.login=startCONFIG.default_login;ENGINE.pass=startCONFIG..default_pass;
   //ENGINE.create('http://192.168.0.2/',$('#myc'), 600, 340);
   var myul=window.location.href.replace('index.html','');
   ENGINE.create(myul,$('#myc'),600,340,()=>{
@@ -69,14 +74,9 @@ function firstLoad() {
       $('#playdiv').css('left',
       parseInt(parseInt($('#playdiv').css('left'))-($('#playdiv').width()/2))+'px'
       )
-  });
-  
+  });  
   $('#test').prop("disabled", false);
-  console.log('Engine Loaded');
-  //setTimeout(() => { defaultsart(); }, 2000);
-  //ENGINE.CAM.change(ENGINE.CAM.MODEL.ORBIT,new THREE.Vector3(0,10,-10),cube);
-  //ENGINE.CAM.change(ENGINE.CAM.MODEL.ORBIT, new THREE.Vector3(0, 10, -10), new THREE.Vector3(0, 0, 0));
-
+  console.log('Engine Loaded');  
 }
 
 
