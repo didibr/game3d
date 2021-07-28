@@ -44,11 +44,14 @@ window.THREE = THREE;
 var audioListener=null;
 
 window.CONTROLS = null;
-window.LISTENER = ()=>{
+window.LISTENER = async ()=>{
   if(typeof(audioListener)=='undefined' || audioListener==null){
     audioListener=new THREE.AudioListener();
     ENGINE.camera.add(audioListener);
+    console.log('create listener');
+    return audioListener;
   }
+  console.log('using exitent listener');
   return audioListener;
 };
 
@@ -119,6 +122,8 @@ window.ANIMATED = {
     ANIMATED._data[name].sca=scale;    
     ANIMATED._data[name].action = new Array();
     ANIMATED._data[name].bones=new Array();
+    var audio=new THREE.Object3D();
+    ANIMATED._data[name].audio=audio;   
 
     
     //console.log(ANIMATED._animations.length);
@@ -164,16 +169,16 @@ window.ANIMATED = {
     //}catch{e}{
       //window.TT=child;
       //console.log('Error 140',name,fbx);
-    //}
-      
+    //}      
     });
+    object.add(audio);
 
     ENGINE.scene.add(object);
     var shapepos = ANIMATED._data[name].shape.position.clone();
     object.position.y = shapepos.y - 1.30;
     ANIMATED._data[name].shape.attach(object);
     ENGINE.Physic.bodyTeleport(ANIMATED._data[name].shape, shapepos.add(new THREE.Vector3(0, 4, 0)));
-    if (!ANIMATED._loaded[fbx]) ANIMATED._loaded[fbx] = { obj: object, sca: scale };
+    if (!ANIMATED._loaded[fbx]) ANIMATED._loaded[fbx] = { obj: object, audio:audio, sca: scale };
     if (typeof (callbak) == 'function') callbak(object);
   },
 
@@ -186,8 +191,10 @@ window.ANIMATED = {
       return;
     }
     if (ANIMATED._loaded[fbx]) {
-      //Clone existent same Model/Skelleton and Animations, rescale and position to default
+      //Clone existent same Model/Skelleton and Animations, rescale and position to default      
+      ANIMATED._loaded[fbx].obj.remove(ANIMATED._loaded[fbx].audio);
       var object = SkeletonUtils.clone(ANIMATED._loaded[fbx].obj);
+      ANIMATED._loaded[fbx].obj.add(ANIMATED._loaded[fbx].audio);
       object.scale.addScalar(ANIMATED._loaded[fbx].sca);
       for (var i = 0; i < ANIMATED._loaded[fbx].obj.animations.length; i++) {
         object.animations.push(ANIMATED._loaded[fbx].obj.animations[i].clone());

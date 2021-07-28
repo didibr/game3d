@@ -317,11 +317,13 @@ var HELPER = {
     }
   },
 
+ 
 
   objaddToBone: function (val, name, boneNumber) {
     var boneName = HELPER.getBonneByNumber(boneNumber);
     if (ANIMATED._data[name].bones[boneName]) {
       ANIMATED._data[name].bones[boneName].attach(val._OBJ3d);
+      
       if (!val._Attached[boneNumber]) {
         val._Attached[boneNumber] =
           { _Pos: { x: 0, y: 0, z: 0 }, _Scale: { x: 1, y: 1, z: 1 }, _Quat: { x: 0, y: 0, z: 0, w: 1 } };
@@ -342,7 +344,7 @@ var HELPER = {
     }
   },
 
-  boneatachedClean: function (_Attached) {
+  boneatachedClean: function (_Attached) { //get iten rotation on bone
     var fakeata = new Array();
     for (var i = 0; i < _Attached.length; i++) {
       var valc = _Attached[i];
@@ -358,22 +360,39 @@ var HELPER = {
     return fakeata;
   },
 
-  audioAtatch: function (audio, obj,callback) {
-    this.simpleDownload(ENGINE.url + 'AUDIOLOAD' + audio, (audiolist) => {
-      var loop = audiolist.loop;
-      for (var i = 0; i < audiolist.audio.length;i++) {        
-        var file=audiolist.audio[i].file;
-        var volume=audiolist.audio[i].volume
-        LOADER.audioLoader.load(ENGINE.url + ENGINE.conf.dir.audio + file, function (buffer) {
-          const audio = new THREE.PositionalAudio(LISTENER());
-          audio.setBuffer(buffer);
-          audio.loop=loop;
-          audio.setVolume(volume);
-          obj.add(audio);
-          if(typeof(callback)!=_UN)callback(audio);
-        });
-      }
-    });
+  _audioBuffer: new Array(),
+  audioAtatch: async function (audio, obj, callback) {
+    var audioFile = ENGINE.url + 'AUDIOLOAD' + audio; //composer audio   
+    if (this._audioBuffer[audioFile]) { //get from buffer preloaded
+      console.log('buffer audio');
+      var buffered = this._audioBuffer[audioFile];
+      const audio = new THREE.PositionalAudio(LISTENER());
+      audio.setBuffer(buffered.buffer);
+      audio.loop = buffered.loop;
+      audio.setVolume(buffered.volume);
+      if(obj!=null)obj.add(audio);
+      if (typeof (callback) != _UN) 
+      callback({audio:audio, loop: buffered.loop, volume: buffered.volume });
+      return;
+    }
+    var audiolist = await HELPER.simpleDownloadSync(audioFile);
+    var loop = audiolist.loop;
+    for (var i = 0; i < audiolist.audio.length; i++) {
+      var file = audiolist.audio[i].file;
+      var volume = audiolist.audio[i].volume
+      var soundFile = ENGINE.url + ENGINE.conf.dir.audio + file; //audio file
+      console.log('load audio');
+      LOADER.audioLoader.load(soundFile,async function (buffer) {
+        const audio = new THREE.PositionalAudio(await LISTENER());
+        audio.setBuffer(buffer);
+        audio.loop = loop;
+        audio.setVolume(volume);
+        //HELPER._audioBuffer[audioFile] = { buffer: buffer, loop: loop, volume: volume };
+        if(obj!=null)obj.add(audio);
+        if (typeof (callback) != _UN) callback({ audio:audio, loop: loop, volume: volume });
+      });
+    }
+
 
     /*LOADER.audioLoader.load('sounds/ping_pong.mp3', function (buffer) {
       const audio = new THREE.PositionalAudio(listener);
@@ -383,9 +402,9 @@ var HELPER = {
     }
   })*/
 
-    
+
   }
 
-  
+
 
 }

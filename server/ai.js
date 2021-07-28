@@ -42,6 +42,7 @@ module.exports = {
   _ONconnect: function (message) {
     this.con[message.ID] = [];
     this.con[message.ID].CONNECTION = message.CONNECTION;
+    this.sendData(message.ID, { CONNECTED: true });
   },
 
   _ONdisconnect: function (message) {
@@ -65,6 +66,7 @@ module.exports = {
     if (typeof (message.DATA.destin) == 'undefined') return;
     if (typeof (message.DATA.userdata) == 'undefined') return;
 
+    //console.log(message.DATA);
     //####### TOTO ANTHACK FUNCTIONS DUE TO MOVIMENTATION #######
     //newpos = new AI.THREE.Vector3(newpos.x, newpos.y, newpos.z);
     

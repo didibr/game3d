@@ -23,6 +23,7 @@ module.exports = {
 
   Wsinitialize: function (connection, MESSAGE) {
     // New connection
+    //console.log('ws',MESSAGE);
     if (typeof (MESSAGE) != null) //conected message
       MESSAGE({
         KEY: 'CONNECTED',
@@ -32,10 +33,11 @@ module.exports = {
     // WebSocket events
     // message on client needs a JSON string structure
     // with TYPE header or ignored
-    connection.on("message", message => {
+    connection.on("message", message => {      
       var JSONMESSAGE = null;
       if (typeof (MESSAGE) != null)
         try {
+          //console.log('reader',message.utf8Data);
           JSONMESSAGE = JSON.parse(message.utf8Data);
           if (typeof (JSONMESSAGE.KEY) != 'undefined') {
             JSONMESSAGE.ID = 'KEY'+connection.id;         
@@ -56,8 +58,9 @@ module.exports = {
     });
   },
 
-  ONREQUEST: function (MESSAGE) {
+  ONREQUEST: function (MESSAGE) {    
     this.socket.on("request", req => {
+      //console.log('rq',req.requestedProtocols);
       // Check protocol
       if (req.requestedProtocols.includes(this.protocolName)) {
         // Accept connection

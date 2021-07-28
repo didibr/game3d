@@ -1,5 +1,4 @@
 var startCONFIG={ //Initial configuration for browser
-  websock_secure : true,
   default_login  : 'didi',
   default_pass   : '1234'  
 }
@@ -29,7 +28,7 @@ function jsload() {
   //loadJS('js/loader/MMDLoader.js');
   //loadJS('js/loader/mmdparser.js');
   //loadJS('js/loader/TGALoader.js');
-  loadJS('js/engine/socket.js');
+  loadJS('js/engine/socketw.js');
   //loadJS('zip.js');  
   loadJS('js/engine/helper.js');
   loadJS('js/engine/xshader.js');
@@ -60,21 +59,24 @@ function jsload() {
 
 function firstLoad() {
   $(document).tooltip({ track: true });
-  SOCKET.secure=startCONFIG.websock_secure;
+  //SOCKET.secure=startCONFIG.websock_secure;
   ENGINE.login=startCONFIG.default_login;
   ENGINE.pass=startCONFIG.default_pass;
   //ENGINE.create('http://192.168.0.2/',$('#myc'), 600, 340);
   var myul=window.location.href.replace('index.html','');
-  ENGINE.create(myul,$('#myc'),600,340,()=>{
+  ENGINE.create(myul,$('#myc'),600,340,()=>{ 
+    var msg = '<input type="text" id="DIALOGLOGIN" placeholder="LOGIN" value="'+ENGINE.login+'"><br>'+    
+    '<input type="password" id="DIALOGPASS" placeholder="PASSWORD" value="'+ENGINE.pass+'"><br><br>';    
     $('#myc').append(
-      `<div id="playdiv" align=center style="color:white;position: absolute;left: 50%;top: 50%;">          
-      <br><input type="button" value="Play" onclick="ENGINE.GAME.play();" />  
+      `<div id="playdiv" align=center style="color:white;position: absolute;left: 50%;top: 20%;">          
+      Login:<br>
+      `+msg+`      
+      <input type="button" value="Play" onclick="ENGINE.GAME.play();" />  
       <br><i style="color: #5f6c7b;font-size: 12px;">
         Working on progress...</i></div>`
       );
-      $('#playdiv').css('left',
-      parseInt(parseInt($('#playdiv').css('left'))-($('#playdiv').width()/2))+'px'
-      )
+      $('#playdiv').css('left',parseInt(parseInt($('#playdiv').css('left'))-($('#playdiv').width()/2))+'px');
+      $('#loadmaps').load(ENGINE.url + 'GETMAPS');
   });  
   $('#test').prop("disabled", false);
   console.log('Engine Loaded');  

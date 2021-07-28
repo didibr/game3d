@@ -416,6 +416,7 @@ async function GetTileNames(res) {
 
 //Receive Browser Websocket Requeriment
 function OnWebsocketMessage(message) {
+  //console.log('msg',message);
   if (typeof (message.KEY) == 'undefined') return;
   AI.receiveMsg(message);
   //console.log('OnWebsocketMessage', message.KEY);

@@ -310,11 +310,11 @@ ENGINE.Physic = {
 
         if (playerobj) {
           ANIMATED.change(login, 'idle', 10);
-          if(
-             ENGINE.GAME._audioslist[login] &&
+          if(ENGINE.GAME._audioslist[login] &&
              ENGINE.GAME._audioslist[login].snstep && 
-             ENGINE.GAME._audioslist[login].snstep.isPlaying==true)
-             ENGINE.GAME._audioslist[login].snstep.stop();
+             ENGINE.GAME._audioslist[login].snstep.live &&
+             ENGINE.GAME._audioslist[login].snstep.live.isPlaying==true)
+             ENGINE.GAME._audioslist[login].snstep.live.stop();
         }
         //console.log('end',objPhys.move);
         //objPhys.setLinearFactor(new  Ammo.btVector3(1, 1, 1));
@@ -330,8 +330,9 @@ ENGINE.Physic = {
           if(
             ENGINE.GAME._audioslist[login] &&
             ENGINE.GAME._audioslist[login].snstep && 
-            ENGINE.GAME._audioslist[login].snstep.isPlaying!=true)
-            ENGINE.GAME._audioslist[login].snstep.play();
+            ENGINE.GAME._audioslist[login].snstep.live &&
+            ENGINE.GAME._audioslist[login].snstep.live.isPlaying!=true)
+            ENGINE.GAME._audioslist[login].snstep.live.play();
         }
         
 

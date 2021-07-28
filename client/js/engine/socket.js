@@ -1,64 +1,69 @@
-window.SOCKET = {
-  secure: false,
-  protocol: 'game1',
-  socket: null,
-  lastcon:null,
+/**
+ * Array to store all the connected ports in.
+ */
+const connectedPorts = [];
 
-  send: function (key, data) {
-    SOCKET.socket.send(JSON.stringify({ KEY: key, DATA: data }));
-  },
+// Create socket instance.
+var socket = new WebSocket('ws://localhost','game1');
 
-  socketMessage: function (message) {    
-    var JSONDATA = null;
-    try {
-      JSONDATA = JSON.parse(message);
-    }
-    catch (e) {
-      console.log('Socket Error', e);
-      return;
-    }
-    if(JSONDATA.MOVETO || JSONDATA.PING || JSONDATA.UPDATEPLAYER){
+socket.onopen = function () {    
+  JSON.stringify({ KEY: 'GETPLAYERCONFIG', DATA: { login: 'a', pass: 'a' } }); 
+  socket.send(package);
+  //const package = JSON.parse({message:'connected'});
+  //connectedPorts.forEach(port => port.postMessage(package));
+};
 
-    }else{
-      console.log('Received', JSONDATA);
-    }    
-    //console.log(message,JSONDATA);
-    if(JSONDATA && JSONDATA!=null)
-    ENGINE.GAME.message(JSONDATA);
-  },
+socket.onmessage = function ({ data }) {
+  const package = JSON.parse(data);
+  connectedPorts.forEach(port => port.postMessage(package));
+};
 
-  recon:function(execute){
-    
-    if(SOCKET.socket.readyState!=1){
-     if(SOCKET.lastcon!==null){
-       SOCKET.wsConnect(SOCKET.lastcon.url,execute);
-     }else{
-      //if(typeof(execute)=='function')execute();
-     }
-    }else{
-      if(typeof(execute)=='function')execute();
-    }
-  },
-
-  wsConnect: function (url,callback) {    
-    var connection='';
-    if(SOCKET.secure==true){
-      connection={url: url, proto:this.protocol};
-      SOCKET.socket = new WebSocket("wss://"+connection.url,connection.proto );
-    }else{
-      connection={url: url, proto:this.protocol};
-      SOCKET.socket = new WebSocket("ws://"+connection.url,connection.proto );
-    }    
-    SOCKET.socket.onopen = function () {    
-      SOCKET.lastcon=connection;      
-      if(typeof(callback)!='undefined')callback();
-    };
-    SOCKET.socket.onmessage = function (message) {
-      SOCKET.socketMessage(message.data);
-    };
-    SOCKET.socket.onerror = function (error) {      
-      SOCKET.GAME=null;     
-      if(typeof(callback)!='undefined')callback(error);
-    };
-  }
+socket.onerror = function () {      
+  const package = JSON.parse({ERROR:'erro'});
+  connectedPorts.forEach(port => port.postMessage(package));
 }
+socket.onclose=socket.onerror;
+
+function connect(url){
+  //'ws://192.168.0.2:8080'
+  var nsocket = new WebSocket(url,'game1');
+  nsocket.onopen=socket.onopen;  
+  nsocket.onmessage=socket.onmessage;
+  nsocket.onerror=socket.onerror;
+  socket=nsocket;
+}
+
+/**
+ * When a new thread is connected to the shared worker,
+ * start listening for messages from the new thread.
+ */
+self.addEventListener('connect', ({ ports }) => {
+  const port = ports[0];
+
+  // Add this new port to the list of connected ports.
+  connectedPorts.push(port);
+
+  /**
+   * Receive data from main thread and determine which
+   * actions it should take based on the received data.
+   */
+  port.addEventListener('message', ({ data }) => {
+    const { action, value } = data;
+    if (action === 'connect') {
+      connect(value);
+    }
+    // Send message to socket.
+    if (action === 'send') {
+      socket.send(value);
+
+    // Remove port from connected ports list.
+    } else if (action === 'unload') {
+      const index = connectedPorts.indexOf(port);
+      connectedPorts.splice(index, 1);
+    }
+  });
+
+
+  // Start the port broadcasting.
+  port.start();
+});

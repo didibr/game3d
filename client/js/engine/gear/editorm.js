@@ -142,6 +142,7 @@ ENGINE.EDITORM = {
         var tile = ENGINE.TILE.getTileByXY(tileName[0], tileName[1]);
         var actPos = tile.position.clone().add(new THREE.Vector3(pos.x, pos.y, pos.z));
         ENGINE.EDITORM.addasphereSound(sndarr.audio.name);               
+        if(sndarr.audio.obj!=null)
         sndarr.audio.obj.position.copy(actPos);
       }
     }
@@ -1491,9 +1492,13 @@ ENGINE.EDITORM = {
     var sndindex = $('#sndactors option:selected').val();
     if (typeof (sndindex) == 'undefined') return;
     sndindex = parseInt(sndindex);
-    HELPER.blinkActor(ENGINE.EDITORM._sounds[sndindex].audio.obj);
+    if(ENGINE.EDITORM._sounds[sndindex].audio.obj && 
+      ENGINE.EDITORM._sounds[sndindex].audio.obj!=null){
+        HELPER.blinkActor(ENGINE.EDITORM._sounds[sndindex].audio.obj);
     HELPER.showTransform(ENGINE.EDITORM._sounds[sndindex].audio.obj);
     HELPER._transformHelper({ value: 'translate' });
+      }
+    
   },
 
 
@@ -1503,11 +1508,17 @@ ENGINE.EDITORM = {
       if (selsound.audio.name == name) {
         var actPos = selsound.audio.pos;
         actPos = new THREE.Vector3(actPos.x, actPos.y + 0.5, actPos.z);
-        var spphere = HELPER.areaSphere(actPos, 1, 'gold', false, 5);
+        var spphere = null;
+        if(selsound.audio.type==0){
+          spphere=HELPER.areaSphere(actPos, 1, 'gold', false, 5);
+        }        
         selsound.audio.obj = spphere;
         HELPER.audioAtatch(selsound.audio.audio,spphere,(getaudio)=>{
-            getaudio.setVolume(selsound.audio.volume);
-            selsound.audio.live=getaudio;
+            getaudio.audio.setVolume(selsound.audio.volume);
+            selsound.audio.live=getaudio.audio;
+            if(selsound.audio.type==1){
+              ENGINE.camera.add(selsound.audio.live);
+            }
           })
         break;
       }
@@ -1533,7 +1544,11 @@ ENGINE.EDITORM = {
             //ENGINE.EDITORM._sounds[i].audio.live.parent().remove(ENGINE.EDITORM._sounds[i].audio.live);
             if(ENGINE.EDITORM._sounds[i].audio.live.isPlaying==true)
             ENGINE.EDITORM._sounds[i].audio.live.stop();
-            ENGINE.EDITORM._sounds[i].audio.obj.selfremove=true;
+            if(ENGINE.EDITORM._sounds[i].audio.obj!=null){
+              ENGINE.EDITORM._sounds[i].audio.obj.selfremove=true;
+            }else{
+              ENGINE.camera.remove(ENGINE.EDITORM._sounds[i].audio.live);
+            }            
             HELPER.hideTransform();
             ENGINE.EDITORM._sounds.splice(i,1);
             $("#dialog2").dialog('close');
@@ -1562,16 +1577,21 @@ ENGINE.EDITORM = {
       alert('Select a Tile first');
       return;
     }
-    var position = ENGINE.EDITORM._tileselected.position.clone();
+    var sntype = $('#sndtype option:selected').val();
+    sntype = parseInt(sntype);
+    var position = null;
+    if(sntype==1){
+      position=new THREE.Vector3();
+    }else{
+      position=ENGINE.EDITORM._tileselected.position.clone();
+    }    
     position = { x: position.x, y: position.y, z: position.z };
     var key = $('#sndkey').val().trim();
     var volume = $('#sndvol').val().trim();
     if (isNaN(volume) == true) {
       alert('Invalid volume value');
       return;
-    }
-    var sntype = $('#sndtype option:selected').val();
-    sntype = parseInt(sntype);
+    }    
     volume = parseFloat(volume);
     ENGINE.EDITORM._sounds.push({
       audio:
@@ -1579,9 +1599,9 @@ ENGINE.EDITORM = {
       tile:ENGINE.EDITORM._tileselected.group.square
     });
     ENGINE.EDITORM._updateSoundList();
-    if (sntype == 0) {//sphere point sound
+    //if (sntype == 0) {//sphere point sound
       ENGINE.EDITORM.addasphereSound(name);
-    }
+    //}
   },
 
   _updateSoundList: function () {

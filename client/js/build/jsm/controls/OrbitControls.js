@@ -34,7 +34,7 @@ class OrbitControls extends EventDispatcher {
 
 
 		//didi
-		this.rightClick=function(){};
+		this.mouseEvent=function(){};
 		this.move={};
 
 		// Set to false to disable this control
@@ -888,7 +888,7 @@ class OrbitControls extends EventDispatcher {
 
 			let mouseAction;
 			//didi
-			scope.rightClick(event,1);
+			scope.mouseEvent(event,1);
 
 			switch ( event.button ) {
 
@@ -1019,7 +1019,7 @@ class OrbitControls extends EventDispatcher {
 		function onMouseUp( event ) {
 
 			//didi
-			scope.rightClick(event,0);
+			scope.mouseEvent(event,0);
 
 			handleMouseUp( event );
 
