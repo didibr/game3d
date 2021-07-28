@@ -1,0 +1,143 @@
+
+*{box-sizing:border-box}body,html{margin:0;padding:0;font-family:sans-serif;width:100%;height:100%}body{font-family:sans-serif;background:linear-gradient(#141e30,#243b55);background-position:center center;background-size:cover;background-repeat:no-repeat}
+
+  #firstload{
+    position: relative;
+    background-color: #4c5054;
+    width: 100%;
+    height: 8px;
+    margin-top: 14%;
+    box-shadow: 1px 1px grey, 2px 1px 0.4em cornflowerblue;
+    overflow: hidden;
+  }
+  #firstloadprogress{
+    background-color: #61b6ff;
+    width: 10%;
+    height: 12px;  
+  }
+  #firstloadval{
+    text-align: center;
+    font-size: 9px;
+    margin-top: 0px;
+    color: black;
+    position: absolute;
+    width: 100%;
+  }
+
+	#myc {
+    display : flex;
+    align-items : center;
+		width: 600px;
+		height: 340px;			
+    justify-content: center;
+	}
+
+ #avaiatextures{
+    width:98%;
+    height: 250px;
+    overflow-y: scroll;
+ }
+
+  #avaiatextures img{  
+    width: 54px;
+    height: 54px;
+    border: 1px solid #03a9f4;
+    cursor: pointer;
+    margin: 4px; 
+  }
+
+  #audiolist{
+  width:98%;
+  height: 180px;
+  overflow-y: scroll;
+ }
+
+ #audiolist audio,#audiolist i{  
+  width: 350px;
+  height: 20px;
+  border: 1px solid #03a9f4;
+  cursor: pointer;
+  margin: 4px;
+  display: block;
+  font-style: normal;
+  text-align: center;
+}
+
+
+
+#audiolist input {
+  width: 18px;
+  height: 16px;
+  position: relative;
+  left: -3px;
+  top: -24px;
+  display: block;
+  float: right;
+}
+
+ #EEDITOR input{
+  width: 90px;
+  font: menu;
+  font-size: 13px;
+  margin: 0px 4px 0px 4px;
+ }
+
+  #avaiatextures img:hover{
+    border: 1px solid #2af330;
+  }
+
+  .pSpace{
+    display: inline-block;
+    width: 120px;
+    padding: 0px;
+    margin: 0px;
+    text-align: right;
+  }
+
+  .pLeft{
+    display: inline-block;
+    width: 80px;
+    padding: 0px;
+    margin: 0px;
+    text-align: right;
+    margin-right: 4px;
+  }
+
+  .snd{
+    display: inline-block;
+    width: 210px;    
+    text-align: left;
+  }
+
+  textarea:focus, input:focus, select{
+    outline: none;
+  }
+
+  input,select {
+    background: #9ea9bb;
+    color: #142b48;
+    border-radius: 7px;
+    border-width: 0px;
+}
+
+  input[type=button] {
+    background: linear-gradient(#7a92bd,#23374e);
+    background-position: center center;
+    background-size: cover;
+    background-repeat: no-repeat;
+    color: #c7c7c7;
+    border-radius: 7px;
+    border-width: 1px;
+    margin: 1px;
+  }
+
+  input[type=button]:hover {
+    border-color: aqua;
+  }
+
+  ::placeholder { 
+    color: #6780b7;
+    opacity: 1; /* Firefox */
+  }
+  
+

@@ -1,0 +1,330 @@
+<div id="tabs">
+	<ul>
+		<li><a href="#tabs-1" onclick="ENGINE.EDITORM._tabSelect(1);">Map</a></li>
+		<li><a href="#tabs-2" onclick="ENGINE.EDITORM._tabSelect(2);">Tile</a></li>
+		<li><a href="#tabs-3" onclick="ENGINE.EDITORM._tabSelect(3);">Light</a></li>
+		<li><a href="#tabs-4" onclick="ENGINE.EDITORM._tabSelect(4);">Actors</a></li>
+    <li><a href="#tabs-5" onclick="ENGINE.EDITORM._tabSelect(5);">Sound</a></li>
+    <li><a href="#tabs-6" onclick="ENGINE.EDITORM._tabSelect(6);">Sky</a></li>
+		<li><a href="#tabs-7" onclick="ENGINE.EDITORM._tabSelect(7);">Script</a></li>
+	</ul>
+	<div id="tabs-1">
+
+		<br> 
+    <div align="left">      
+    <p class="pSpace">Save as:</p>
+    <input id="saveas" disabled type="text" style="width: 152px" value=""
+     placeholder="Map Name"/>
+    <br>
+    <div align="center">
+        <input id="saveasbt" type="button" disabled style="width: 55px;"
+        onClick="ENGINE.EDITORM._saveMap(this);" value="Save">
+      </div>
+
+    <br>
+    <p class="pSpace">Load:</p>
+    <div id="loadmaps" style="display: inline;">
+      <select  id="loadmpsel" style="width:160px">        
+        <option value="---" disabled="disabled" selected>---</option>        
+      </select>
+    </div>
+    <br>
+    <div align="center">
+        <input type="button"style="width: 55px;" onClick="ENGINE.EDITORM._loadMap(this);"
+         value="Load">
+    </div>
+
+    <br>
+    <p class="pSpace">Create:</p>
+    <div style="display: inline;">
+      <input id="cells" type="number" style="width: 74px" value="5" placeholder="TilesX"/>
+      <input id="rows" type="number" style="width: 74px" value="5" placeholder="TilesY"/>
+    </div>
+    <br>
+    <div align="center">
+        <input type="button" onClick="ENGINE.EDITORM._create(this);" style="width: 55px;"
+         value="Create">
+    </div>
+
+    </div>
+
+  </div>
+
+  <div id="tabs-2">
+      <div id="Ttabs">
+	    <ul>        
+        <li><a href="#Ttabs-0" onclick="ENGINE.EDITORM._tabSelect(13);">List</a></li>
+		    <li><a href="#Ttabs-1" onclick="ENGINE.EDITORM._tabSelect(10);">Object</a></li>
+		    <li><a href="#Ttabs-2" onclick="ENGINE.EDITORM._tabSelect(11);">Item</a></li>		
+        <li><a href="#Ttabs-3" onclick="ENGINE.EDITORM._tabSelect(12);">Entity</a></li>		        
+	    </ul>
+      <div id="Ttabs-0">                   
+        <div class="tilename"></div>
+              <div id="tilearea" style="display:block;">
+            <p class="pSpace">Inserted:</p>
+            <div id="sceneobjs"  style="display: inline;">
+            </div>
+            <div align="center">
+            <input  type="button" onclick="ENGINE.EDITORM._removeTile();" 
+              style="width: 70px;" value="Remove">
+            </div>
+            <br>
+            <p class="pSpace">Rotation:</p>
+            <input id="matRot" type="number" step="0.01" value="0"
+            style="width: 64px;position: relative;" />
+            <img src="./images/rotate.png" style="position: relative;top: 9px;cursor: pointer;"
+            onclick="ENGINE.EDITORM._rotateTile();">
+            <img src="./images/miniarrows.png" style="position: relative;top: 9px;cursor: pointer;"
+            onclick="ENGINE.EDITORM._translateTile();">
+          </div>
+      </div>
+
+	    <div id="Ttabs-1">                   
+        <div class="tilename"></div>
+        <br>     
+        <div align="left">      
+          <p class="pSpace">Name:</p>
+          <div id="loadtl"  style="display: inline;">
+          <select  id="loadasel" style="width:160px">        
+            <option value="---" disabled="disabled" selected>---</option>        
+          </select>
+          </div>
+          <br>
+          <div align="center">
+          <input type="button" onClick="ENGINE.EDITORM._loadTile(this);" 
+            style="width: 55px;" value="Insert">
+          </div>
+          <br>    
+        </div>
+                 
+      </div>
+
+      <div id="Ttabs-2">                   
+        <div class="tilename"></div>       
+        <br>  
+        <p class="pSpace">Name:</p>
+         <div id="loadtas" type="text" style="display: inline;">
+        <select  id="loadtasel" style="width:160px">        
+         <option value="---" disabled="disabled" selected>---</option>        
+        </select>
+         </div><br>
+        <div align="center">
+        <input type="button" onClick="ENGINE.EDITORM._loadItem(this);" 
+           style="width: 55px;" value="Insert">
+        </div>
+      </div>
+
+      <div id="Ttabs-3">                          
+        <div class="tilename"></div>
+        <br>             
+        <p class="pSpace">Name:</p>
+          <div id="loadentarea"  style="display: inline;">
+          <select  id="loadent" style="width:160px">        
+            <option value="---" disabled="disabled" selected>---</option>        
+          </select>
+          </div><br>
+          <div align="center">
+          <input type="button" onClick="ENGINE.EDITORM._loadEntity(this);" 
+            style="width: 55px;" value="Insert">
+          </div>
+          <br>
+      </div>
+
+      </div>
+  </div>
+
+
+  <div id="tabs-3">  
+    <div align="left">  
+      <br>
+      <p class="pSpace">View:</p>
+      <select id="lmode" style="width:130px" onchange="ENGINE.EDITORM._changelgview();">
+        <option value="0" selected>Debug</option>
+        <option value="1">Final</option>
+        <option value="2">Ambient</option>
+        <option value="3">DirectionalOnly</option>
+        <option value="4">PointOnly</option>
+      </select>
+      <br><br>
+      <p class="pSpace">Insert:</p>
+      <select id="laddnew" style="width:115px">        
+        <option value="---" disabled>---</option>
+        <option value="3">Directional</option>
+        <option value="4">Point</option>
+      </select>
+      <input type="button" value="ADD" onclick="ENGINE.EDITORM._addlight();">
+      <br>
+      <p class="pSpace">Selected:</p>
+      <div id="sellightd" style="width: 115px;display: inline-grid;">
+        <select id="sellight">                
+        </select>
+      </div>
+      <input type="button" value="DEL" onclick="ENGINE.EDITORM._dellight();">
+      <br>
+      <p class="pSpace">Is Sun:</p>
+      <input type="checkbox" id="l1isSun" onclick="ENGINE.EDITORM._issun();"> 
+
+      <br>
+      <div align="center"><b>Configuraion</b></div>
+      <div id="sellightdcf">
+        <p class="pSpace">Visible:</p>
+        <select id="l1on" style="width:90px">
+          <option value="1">On</option>
+          <option value="0">Off</option>        
+        </select>    
+        <select id="l1target" style="width:70px" onchange="ENGINE.EDITORM._changetr();">
+          <option value="---" disabled>Helper</option>
+          <option value="1">Lamp</option>
+          <option value="0">Target</option>        
+        </select>     
+      <p class="pSpace">Color:</p>
+      <input id="l1color" type="string" style="width: 90px" value="#ffffff"/>           
+      <br>
+      <div id="l1asshadow">
+       <p class="pSpace">Shadow:</p>
+        <select id="l1shadow" style="width:90px">
+          <option value="1">On</option>
+          <option value="0">Off</option>        
+        </select>          
+      </div>      
+      <p class="pSpace">Intensity:</p>
+      <input type="number" id="l1itens" min="0" max="1000" value="1" style="width: 90px" step="0.1">
+
+      <div>
+      <p class="pSpace">Distance:</p>
+      <input type="number" id="l1dist" min="0.5" max="1000" value="20" style="width: 90px" step="0.5">
+      </div>
+      <div>
+      <p class="pSpace">Angle:</p>
+      <input type="number" id="l1angle" min="0" max="1.5" value="0.5" style="width: 90px" step="0.01">
+      </div>
+      <div>
+      <p class="pSpace">Penumbra:</p>
+      <input type="number" id="l1pen" min="0.1" max="1" value="1" style="width: 90px" step="0.01">
+      </div>
+      <div>
+      <p class="pSpace">Decay:</p>
+      <input type="number" id="l1deca" min="0" max="2" value="1.5" style="width: 90px" step="0.1">
+      </div>      
+      </div> 
+      <br>
+      
+    </div>   
+  </div>
+
+  <div id="tabs-4">    
+    Actors on Map<br><br>
+    <div id="eactorscont">
+    <select id="eactors" style="width:300px" size="10" onchange="ENGINE.EDITORM._actorBlink();">
+    </select>
+    </div>
+    <br>
+    <input type="button" onClick="ENGINE.EDITORM._removeActor(this);" style="width: 82px;" value="Remove">
+     <input type="button" onClick="ENGINE.EDITORM._folowActor(this);" style="width: 82px;" value="Folow">
+    <br><br>
+    <p class="pSpace" style="width: 75px;">Action:</p>
+    <div id="actactor" type="text" style="display: inline;">
+      <select id="actactorsel" style="width:160px" onchange="ENGINE.EDITORM._actorChange(this);">
+        <option value="---" disabled="disabled" selected>Options</option>
+        <option value="0">Player Spawn</option>
+        <option value="1">Teleport</option>
+        <option value="2">Give Item</option>
+        <option value="3">Give Key</option>
+        <option value="4">Give Buff</option>
+      </select>
+    </div>
+    <br> 
+    
+    <p class="pSpace optact0" style="width: 75px;display: none;">Destin:</p>
+    <select class="optact0" id="actdest" style="width:160px;display: none;"></select>
+
+    <p class="pSpace optact1" style="width: 75px;display: none;">Need Key:</p>
+    <input class="optact1" type="text" id="actkey" value="" style="width: 160px;display: none;">
+
+    <p class="pSpace optact2" style="width: 75px;display: none;">Need LvL:</p>
+    <input class="optact2" type="number" id="actlvl" min="1" max="100" value="1" style="width: 160px;display: none;" step="1">
+
+    <p class="pSpace optact3" style="width: 75px;display: none;">Item:</p>
+    <select class="optact3" id="actitem" style="width:160px;display: none;"></select>
+
+    <p class="pSpace optact4" style="width: 75px;display: none;">Add Key:</p>
+    <input class="optact4" type="text" id="actkeyset" value="" style="width: 160px;display: none;">
+
+    <p class="pSpace optact5" style="width: 75px;display: none;">Buff:</p>
+    <select class="optact5" id="actbuff" style="width:160px;display: none;">
+      <option value="givelife">Life</option>
+      <option value="givestr">Str</option>
+      <option value="givedex">Dex</option>
+      <option value="givemana">Mana</option>
+      <option value="givegold">Gold</option>      
+      <option value="givearmor">Armor</option>      
+      <option value="givedmg">Damage</option>
+    </select>
+
+    <p class="pSpace optact6" style="width: 75px;display: none;">Quantity:</p>
+    <input class="optact6" type="number" id="actqtd" min="1" max="100" value="1" style="width: 160px;display: none;" step="1">
+
+    <p class="pSpace optact7" style="width: 75px;display: none;">Name:</p>
+    <input class="optact7" type="text" id="actname" value="" placeholder="'START' as player spawn" style="width: 160px;display: none;">
+
+
+    <br><br>
+    <div align="center">
+      <input type="button" onClick="ENGINE.EDITORM._insertActor(this);" style="width: 82px;" value="Insert">
+    </div>
+  </div>
+
+
+  <div id="tabs-5">    
+    Sound on Map<br><br>
+    <div id="sndcount">
+    <select id="sndactors" style="width:300px" size="10" onchange="ENGINE.EDITORM._soundBlink();">
+    </select>
+    </div>
+    <img src="./images/play.png" style="cursor: pointer;" onclick="ENGINE.EDITORM.playSelected()">
+    <img src="./images/stop.png" style="cursor: pointer;" onclick="ENGINE.EDITORM.stopSelected()">
+    <br>
+    <input type="button" onClick="ENGINE.EDITORM._removeSound(this);" style="width: 82px;" value="Remove">
+     <input type="button" onClick="ENGINE.EDITORM._folowSound(this);" style="width: 82px;" value="Folow">
+    <br>
+    <select id='snstep' class="snd" style="margin-top: 6px;margin-bottom: 8px;"></select>
+    <br>
+  
+    <p class="pSpace" style="width: 75px;">Name:</p>
+    <input type="text" id="sndname" value="" placeholder="Friend Name" style="width: 160px;">
+
+    <p class="pSpace" style="width: 75px;">Volume</p>
+    <input type="number" id="sndvol" min="0" value="20" style="width: 160px;" step="1">
+
+    <p class="pSpace" style="width: 75px;">Key:</p>
+    <input type="text" id="sndkey" value="" placeholder="Key for ingame use" style="width: 160px;">
+
+    <p class="pSpace" style="width: 75px;">Type:</p>
+    <select id='sndtype' style="width: 160px;">
+      <option value="0">Point</option>
+      <option value="1">Ambient</option>
+    </select>
+      
+    <br>
+    <div align="center">
+      <input type="button" style="margin-top: 6px;" 
+      onClick="ENGINE.EDITORM._insertSound(this);" style="width: 82px;" value="Insert">
+    </div>
+  </div>
+
+  <div id="tabs-6">    
+    Sky
+  </div>
+  
+
+
+  <div id="tabs-7">
+    <textarea cols=40 id="mscript" rows="10" maxlength="500" wrap="hard"></textarea>
+    <br>
+    <input type="button" value="Execute" onclick="HELPER.script($('#mscript').val());">
+  </div>
+</div>
+
+
+<div id="dialog2" title="Popup" style="display:none">
+</div>

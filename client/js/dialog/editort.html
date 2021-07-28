@@ -1,0 +1,233 @@
+<div id="tabs">
+	<ul>
+		<li><a href="#tabs-1" onclick="ENGINE.EDITORT._tabSelect(3);">Object</a></li>
+		<li><a href="#tabs-2" onclick="ENGINE.EDITORT._tabSelect(1);">Model</a></li>
+		<li><a href="#tabs-3" onclick="ENGINE.EDITORT._tabSelect(2);">Texture</a></li>
+		<li><a href="#tabs-4" onclick="ENGINE.EDITORT._tabSelect(4);">Upload</a></li>
+	</ul>
+	<div id="tabs-1">
+        <br> 
+    <div align="left">      
+    <p class="pSpace">Save as:</p>
+    <input id="saveas" type="text" style="width: 152px" value="" placeholder="Object Name"/>
+    <br>
+    <div align="center">
+        <input type="button" onClick="ENGINE.EDITORT._saveTile(this);" value="Save">
+      </div>
+
+    <br>
+    <p class="pSpace">Load:</p>
+    <div id="loadas" type="text" style="display: inline;">
+      <select  id="loadasel" style="width:160px">        
+        <option value="---" disabled="disabled" selected>---</option>        
+      </select>
+    </div>
+    <br>
+    <div align="center">
+        <input type="button" onClick="ENGINE.EDITORT._loadTile(this);" value="Load">
+      </div>
+
+    </div>
+  </div>
+
+  <div id="tabs-2">
+    
+    <br>
+   <div align="left">            
+    Uploaded models avaiable:
+    <div id="avaiaobjs">
+    </div>
+    <p style="display: inline-block;
+    width: 238px;
+    padding: 0px;
+    margin: 0px;
+    border: 1px solid;">Physic model</p>
+    <input type="button" 
+    onClick="ENGINE.EDITORT._addPhisicObj();" value="ADD">
+    <br><br>
+    Inserted models:
+    <div id="sceneobjs">
+    </div>
+    </div>
+
+
+		<br>       
+    <div align="left" style="position: absolute;width: 70px;">
+      Step:<br>
+      <input id="stepSize" type="number" style="width: 100%" step="0.1" value="0.5"/><br>
+      Axis:<br>
+      <select id="rotateAx" style="width:100%">
+        <option value="X">X</option>
+        <option value="Y" selected="selected">Y</option>
+        <option value="Z">Z</option>
+      </select>     
+    <br>  
+      Helper:<br>
+      <select id="helperctrl" style="width:100%" onchange="HELPER._transformHelper(this)">
+        <option value="translate" selected>Position</option>
+        <option value="rotate">Rotation</option>
+        <option value="scale">Resize</option>
+      </select> 
+      <br>       
+    </div> 
+    <div style="display: block;position: absolute;top: 316px;width: 210px;text-align: left;">
+      Attached:<br>
+      <select id="atached" style="width:100%" onchange="ENGINE.EDITORT.atachedHelper(this)">
+        <option value="---">None</option>        
+        <option value="1" bone="mixamorigLeftHand">Left Hand</option>        
+        <option value="2" bone="mixamorigRightHand">Right Hand</option>      
+        <option value="3" bone="mixamorigLeftLeg">Left Leg</option>  
+        <option value="4" bone="mixamorigRightLeg">Right Leg</option>  
+        <option value="5" bone="mixamorigLeftFoot">Left Foot</option>  
+        <option value="6" bone="mixamorigRightFoot">Right Foot</option>          
+        <option value="7" bone="mixamorigHead">Head</option>
+        <option value="8" bone="mixamorigNeck">Neck</option>
+        <option value="9" bone="mixamorigSpine2">Body</option>                
+      </select>
+    </div>
+
+    <div style="width: 40px;position: relative;top: 3px;right: -55px;">
+      <input id="rotAngle" type="text" value="0" style="width: 20px;font-size: 9px;"/>
+      °
+    </div>
+
+    <div align="right" style="position: absolute;width: 70px;right: 10px;">
+      Position:<br>
+      <input id="objPos" type="text" style="width: 100%;font-size: 8px;"/><br>
+      Rotation:<br>
+      <input id="objRot" type="text" style="width: 100%;font-size: 8px;"/><br>
+      Scale:<br>
+      <input id="objSca" type="text" style="width: 100%;font-size: 8px;"/><br>
+    </div>  
+
+    <img src="/images/arrow.png" usemap="#image-map">
+
+    <map name="image-map">
+    <area target="_self"  href="#" 
+    onclick="ENGINE.EDITORT._mapClick(1);return false;" title="Move UP"
+     coords="30,30,7,5" shape="rect">
+    <area target="_self"  href="#"
+    onclick="ENGINE.EDITORT._mapClick(2);return false;" coords="44,15,85,41" shape="rect">
+    <area target="_self"  href="#" 
+    onclick="ENGINE.EDITORT._mapClick(3);return false;" title="Rotate on Axis"
+    coords="124,31,101,6" shape="rect">
+    <area target="_self"  href="#" 
+    onclick="ENGINE.EDITORT._mapClick(4);return false;" coords="14,47,44,85" shape="rect">
+    <area target="_self"  href="#" 
+    onclick="ENGINE.EDITORT._mapClick(5);return false;" coords="84,47,117,84" shape="rect">
+    <area target="_self"  href="#" 
+    onclick="ENGINE.EDITORT._mapClick(6);return false;" title="Move Down"
+    coords="7,101,30,127" shape="rect">
+    <area target="_self"  href="#" 
+    onclick="ENGINE.EDITORT._mapClick(7);return false;" coords="46,89,84,119" shape="rect">
+    <area target="_self"  href="#" 
+    onclick="ENGINE.EDITORT._mapClick(8);return false;" title="Scale on Axis"
+    coords="124,101,101,127" shape="rect">
+    <area target="_self"  href="#" 
+    onclick="ENGINE.EDITORT._mapClick(9);return false;" title="Reset"
+    coords="56,54,76,75" shape="rect">
+    </map>
+    <br><br><br>
+  </div>
+
+
+  <div id="tabs-3">     
+         <div id="Ttabs">
+	    <ul>
+		    <li><a href="#Ttabs-1" onclick="ENGINE.EDITORT._tabSelect(10);">Image</a></li>
+		    <li><a href="#Ttabs-2" onclick="ENGINE.EDITORT._tabSelect(11);">Option</a></li>		
+        <li><a href="#Ttabs-3" onclick="ENGINE.EDITORT._tabSelect(12);">Shader</a></li>		
+	    </ul>
+	    <div id="Ttabs-1">
+        <div align="left">            
+          <div id="avaiatextures">
+          </div>
+        </div>
+      </div>
+      <div id="Ttabs-2">
+        <div align="left" id="Ttabs-2control">  
+        <p class="pSpace">Sides:</p>
+      <select id="matSide" style="width:90px">
+        <option value="0">Front</option>
+        <option value="1">Back</option>
+        <option value="2" selected>Double</option>
+      </select><br>
+      <p class="pSpace">Transparency:</p>
+      <select id="matTransp" style="width:90px">
+        <option value="0">No</option>
+        <option value="1">Yes</option>        
+      </select><br>
+      <p class="pSpace">Opacity:</p>
+      <input id="matOpac" type="number" style="width: 83px" step="0.05" value="1" max="1" min="0"/><br>
+      <p class="pSpace">ReceiveShadow:</p>
+      <select id="matRcvS" style="width:90px">
+        <option value="0">No</option>
+        <option value="1">Yes</option>        
+      </select><br>
+      <p class="pSpace">CastShadow:</p>
+      <select id="matCastS" style="width:90px">
+        <option value="0">No</option>
+        <option value="1">Yes</option>        
+      </select><br>
+      <p class="pSpace">Rotation:</p>
+      <input type="number" id="mrotation" min="-2" max="2" value="0" style="width: 80px" step="0.01">
+      <p class="pSpace">Offset.x:</p>
+      <input type="number" id="offsetx" min="0" max="1" value="0" style="width: 80px" step="0.01">
+      <p class="pSpace">Offset.y:</p>
+      <input type="number" id="offsety" min="0" max="1" value="0" style="width: 80px" step="0.01">
+      <p class="pSpace">Repeat.x:</p>
+      <input type="number" id="repeatx" min="0.1" max="2" value="1" style="width: 80px" step="0.01">
+      <p class="pSpace">Repeat.y:</p>
+      <input type="number" id="repeaty" min="0.1" max="2" value="1" style="width: 80px" step="0.01">
+      <p class="pSpace">Center.x:</p>
+      <input type="number" id="centerx" min="0" max="1" value="0" style="width: 80px" step="0.01">
+      <p class="pSpace">Center.y:</p>
+      <input type="number" id="centery" min="0" max="1" value="0" style="width: 80px" step="0.01">
+      <br>
+      <p class="pSpace">Color:</p>
+      <input id="matColor" type="string" style="width: 83px" value="#ffffff"/><br>
+
+      <br>
+      <div align="center">
+        <input type="button" onClick="ENGINE.EDITORT._resettextures();"
+        value="Reset">
+      </div>
+
+        </div>
+      </div>
+      <div id="Ttabs-3">
+        Shadder Effects<br>
+        <div id="shaderlist"></div>
+      </div>
+      </div>
+  </div>
+
+  <div id="tabs-4">
+    <br>
+    <div align='center'>
+      Open Upload Form<br><br>
+      <input type="button" onClick="ENGINE.DIALOG.fileupload();" value="Upload File">
+    </div>
+    <br>
+  </div>
+</div>
+
+
+<div id="dialog2" title="File Upload" style="display:none">
+   <div style="margin:10px">
+  	<form method="post" action="" enctype="multipart/form-data" 
+      id="uploadformodel" style="display:none">
+			<div id="uploadiv">
+				<input type="file" id="file" name="file" />    
+    </div>
+    </form>
+    <br>        
+    <div align="left">    
+    Texture as ( .png .jpg .bmp)<br>
+    3D Model as ( .obj )
+    </div>
+    <br><br>
+    <input type="button" id="btuploadmodel" onClick="ENGINE.EDITORT._loadModel(this);" 
+    value="Upload File">
+    </div>
+</div>

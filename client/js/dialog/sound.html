@@ -1,0 +1,65 @@
+<div id="tabs">
+    <ul>
+        <li><a href="#tabs-1" onclick="ENGINE.SOUND._tabSelect(1);">Sound</a></li>
+        <li><a href="#tabs-2" id="tab2" onclick="ENGINE.SOUND._tabSelect(2);">Composer</a></li>
+    </ul>
+    <div id="tabs-1">
+        <br>
+        <div align="left">
+            <p class="pSpace">Save as:</p>
+            <input id="saveas" type="text" style="width: 152px" value="" placeholder="Object Name" />
+            <br>
+            <div align="center">
+                <input type="button" onClick="ENGINE.SOUND._saveSound(this);" value="Save">
+            </div>
+
+            <br>
+            <p class="pSpace">Load:</p>
+            <div id="loadas" type="text" style="display: inline;">
+                <select id="loadasel" style="width:160px">
+                    <option value="---" disabled="disabled" selected>---</option>
+                </select>
+            </div>
+            <br>
+            <div align="center">
+                <input type="button" onClick="ENGINE.SOUND._loadSound(this);" value="Load">
+            </div>
+
+        </div>
+    </div>
+
+
+
+    <div id="tabs-2">
+        <div align="left">            
+            <div id="audiolist">
+            </div>
+          </div>
+          <div align="center" style="padding: 4px">
+            <input type="button" 
+            onclick="ENGINE.DIALOG.fileupload(()=>{ENGINE.SOUND._tabSelect(2);$('#dialog2').dialog('close');});" value="Upload File">
+            <div style="width: 143px;float: right;" align="center">
+                Loop:<input type="checkbox" id="loop"  onclick="ENGINE.SOUND.loop()">
+                <img src="./images/play.png" style="cursor: pointer;" onclick="ENGINE.SOUND.playAll()">
+                <img src="./images/stop.png" style="cursor: pointer;" onclick="ENGINE.SOUND.stopAll()">
+            </div>
+          </div>
+        </div>
+    </div>
+
+
+    <div id="dialog2" title="File Upload" style="display:none">
+        <div style="margin:10px">
+            <form method="post" action="" enctype="multipart/form-data" id="uploadformodel" style="display:none">
+                <div id="uploadiv">
+                    <input type="file" id="file" name="file" />
+                </div>
+            </form>
+            <br>
+            <div align="left">
+                Audio as ( .mp3 .ogg .mid )<br>
+            </div>
+            <br><br>
+            <input type="button" id="btuploadmodel" onClick="ENGINE.EDITORT._loadModel(this);" value="Upload File">
+        </div>
+    </div>

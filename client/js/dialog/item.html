@@ -1,0 +1,181 @@
+<div id="tabs">
+  <ul>
+    <li><a href="#tabs-1" onclick="ENGINE.ITEM._tabSelect(1);">Item</a></li>
+    <li><a href="#tabs-2" onclick="ENGINE.ITEM._tabSelect(2);">Object</a></li>
+    <li><a href="#tabs-3" onclick="ENGINE.ITEM._tabSelect(3);">Requires</a></li>
+    <li><a href="#tabs-4" onclick="ENGINE.ITEM._tabSelect(4);">Atribute</a></li>
+  </ul>
+  <div id="tabs-1">
+    <br>
+    <div align="left">
+      <div id="iconimg" style="display: block;position: absolute;width: 74px;height: 74px;top: 85px;"></div>
+      <p class="pSpace">Save as:</p>
+      <input id="saveas" type="text" style="width: 152px" value="" placeholder="Item Name" />
+      <br>
+      <div align="center">
+        <input type="button" onClick="ENGINE.ITEM._saveItem(this);" value="Save">
+      </div>
+      <br>
+      <p class="pSpace">Load:</p>
+      <div id="loadtas" type="text" style="display: inline;">
+        <select id="loadtasel" style="width:160px">
+          <option value="---" disabled="disabled" selected>---</option>
+        </select>
+      </div>
+      <br>
+      <div align="center">
+        <input type="button" onClick="ENGINE.ITEM._loadItem(this);" value="Load">
+      </div>
+    </div>
+    <br><br>
+  </div>
+
+  <div id="tabs-2">
+    <div id="Ttabs">
+      <ul>
+        <li><a href="#Ttabs-1" onclick="ENGINE.ITEM._tabSelect(10);">3D</a></li>
+        <li><a href="#Ttabs-2" onclick="ENGINE.ITEM._tabSelect(11);">Icon</a></li>
+        <li><a href="#Ttabs-3" onclick="ENGINE.ITEM._tabSelect(12);">Sound</a></li>
+      </ul>
+      <div id="Ttabs-1">
+        Object created on Object Editor
+        <br><br>
+        <p class="pSpace">Load:</p>
+        <div id="loadas" type="text" style="display: inline;">
+          <select id="loadasel" style="width:160px">
+            <option value="---" disabled="disabled" selected>---</option>
+          </select>
+        </div>
+        <br>
+        <div align="center">
+          <input type="button" onClick="ENGINE.ITEM._loadTile(this);" value="Load">
+        </div>
+        <br>
+        <div align="center"><b>Contat Box</b></div>
+        <p class="pSpace">Helper:</p>
+        <select id="helperctrl" style="width:90px" onchange="HELPER._transformHelper(this)">
+          <option value="translate" selected>Position</option>
+          <option value="rotate">Rotation</option>
+          <option value="scale">Resize</option>
+        </select>
+      </div>
+
+      <div id="Ttabs-2">
+        <div align="left">
+          <div id="avaiatextures">
+          </div>
+          <div align="center" style="padding: 4px">
+            <input type="button"
+              onClick="ENGINE.DIALOG.fileupload(()=>{ENGINE.ITEM._tabSelect(2);$('#dialog2').dialog('close');});"
+              value="Upload File">
+          </div>
+        </div>
+      </div>
+
+      <div id="Ttabs-3">
+        sound on pick<br>
+        sound on drop<br>
+        sound on use<br>
+        sound on split<br>        
+      </div>
+    </div>
+  </div>
+
+  <div id="tabs-3">
+    <!----Requeriments --->
+    <div id="T2tabs">
+      <ul>
+        <li><a href="#T2tabs-1" onclick="ENGINE.ITEM._tabSelect(10);">Need</a></li>
+        <li><a href="#T2tabs-2" onclick="ENGINE.ITEM._tabSelect(11);">Give</a></li>
+      </ul>
+      <div id="T2tabs-1">
+        <div align="center">Minimun Need to Use/Take</div>
+        <br>
+        <p class="pSpace">Life:</p>
+        <input type="number" id="needlife" min="0" max="100" value="0" style="width: 80px" step="1">
+        <p class="pSpace">STR:</p>
+        <input type="number" id="needstr" min="0" max="100" value="0" style="width: 80px" step="1">
+        <p class="pSpace">DEX:</p>
+        <input type="number" id="needdex" min="0" max="100" value="0" style="width: 80px" step="1">
+        <p class="pSpace">Mana:</p>
+        <input type="number" id="needmana" min="0" max="100" value="0" style="width: 80px" step="1">
+        <p class="pSpace">Gold:</p>
+        <input type="number" id="needgold" min="0" max="100" value="0" style="width: 80px" step="1">
+        <p class="pSpace">Key ID:</p>
+        <input id="needkey" type="string" style="width: 83px" value="" />
+        <br>
+      </div>
+      <div id="T2tabs-2">
+        <div align="center">Gives on Use</div>
+        <br>
+        <p class="pSpace">Damage:</p>
+        <input type="number" id="givedmg" min="0" max="100" value="0" style="width: 80px" step="1">
+        <p class="pSpace">Armor:</p>
+        <input type="number" id="givearmor" min="0" max="100" value="0" style="width: 80px" step="1">
+        <p class="pSpace">Life:</p>
+        <input type="number" id="givelife" min="0" max="100" value="0" style="width: 80px" step="1">
+        <p class="pSpace">STR:</p>
+        <input type="number" id="givestr" min="0" max="100" value="0" style="width: 80px" step="1">
+        <p class="pSpace">DEX:</p>
+        <input type="number" id="givedex" min="0" max="100" value="0" style="width: 80px" step="1">
+        <p class="pSpace">Mana:</p>
+        <input type="number" id="givemana" min="0" max="100" value="0" style="width: 80px" step="1">
+        <p class="pSpace">Gold:</p>
+        <input type="number" id="givegold" min="0" max="100" value="0" style="width: 80px" step="1">
+        <p class="pSpace">Key ID:</p>
+        <input id="givekey" type="string" style="width: 83px" value="" />
+        <br>
+      </div>
+    </div>
+  </div>
+
+  <div id="tabs-4">
+    <br>
+    <p class="pSpace">Class:</p>
+    <select id="type" style="width:120px">
+      <option value="0">Consumable</option>
+      <option value="1">Weapon</option>
+      <option value="2">Armor</option>
+      <option value="3">Key</option>
+    </select><br>
+    <p class="pSpace">Use on Pick:</p>
+    <select id="usable" style="width:120px">
+      <option value="0">False</option>
+      <option value="1">True</option>
+    </select><br>
+    <p class="pSpace">Stockeable:</p>
+    <select id="stock" style="width:120px">
+      <option value="0">False</option>
+      <option value="1">True</option>
+    </select><br>
+    <p class="pSpace">Max per Pack:</p>
+    <input type="number" id="max" min="1" max="100" value="1" style="width: 120px" step="1">
+    <br>
+    <p class="pSpace">Dropable:</p>
+    <select id="dropable" style="width:120px">
+      <option value="0">False</option>
+      <option value="1">True</option>
+    </select><br>
+    <p class="pSpace">Sell Price:</p>
+    <input type="number" id="price" min="1" value="1" style="width: 120px" step="10">
+    <br>
+  </div>
+</div>
+
+
+
+<div id="dialog2" title="File Upload" style="display:none">
+  <div style="margin:10px">
+    <form method="post" action="" enctype="multipart/form-data" id="uploadformodel" style="display:none">
+      <div id="uploadiv">
+        <input type="file" id="file" name="file" />
+      </div>
+    </form>
+    <br>
+    <div align="left">
+      Texture as ( .png .jpg .bmp)<br>
+    </div>
+    <br><br>
+    <input type="button" id="btuploadmodel" onClick="ENGINE.EDITORT._loadModel(this);" value="Upload File">
+  </div>
+</div>

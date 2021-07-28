@@ -1,0 +1,47 @@
+<!doctype html>
+
+<head>
+  <meta http-equiv='cache-control' content='no-cache'>
+  <meta http-equiv='expires' content='0'>
+  <meta http-equiv='pragma' content='no-cache'>
+	<link rel="stylesheet" href="/css/index.css">
+	<link rel="stylesheet" href="/css/jquery-ui.css">
+	<script defer type="text/javascript">
+    var Rsize=135e3;
+		var RESTIME=setInterval(function(){for(
+      var e=performance.getEntriesByType("resource"),t=0,r=0;
+      r<e.length;r++)t+=e[0].transferSize;
+    var n=Math.round(100*t/Rsize),a=document.getElementById("firstloadprogress");
+    void 0===a||null==a?clearInterval(RESTIME):(a.style.width=n+"%",
+    void 0!==document.getElementById("firstloadval")&&(document.getElementById("firstloadval").innerText="Loaded: "+t))},100);
+	</script>
+	<title>Game Engine</title>
+</head>
+
+<body>
+
+	<div align="center">
+		<div id="myc">
+			<div id="firstload" align="left">
+				<div id="firstloadval"></div>
+				<div id="firstloadprogress"></div>
+			</div>
+		</div>
+	</div>
+	
+
+  <div id="ressize"></div>
+	<div id="loader" class="titulo"></div>
+
+  <!---default dialog div--->
+  <div id="dialogholder" style="display:none">
+	  <div id="dialog" title="Basic dialog" style="display:none">
+	  </div>    
+  </div>
+
+	<!--<script type="module" src="js/build/three.module.js"></script>-->
+	<script type="module" src="js/engine/module.js"></script>
+  <script type="text/javascript" src="index.js"></script>
+  
+</body>
+<html>
