@@ -1,5 +1,4 @@
 
-
 var starter = setInterval(function () { //waiting shadders loaded
   if (typeof (SHADER) !== "undefined") {
     clearInterval(starter);
@@ -59,7 +58,8 @@ function firstLoad() {
   SOCKET.secure=false;
   ENGINE.login='didi';ENGINE.pass='1234';
   //ENGINE.create('http://192.168.0.2/',$('#myc'), 600, 340);
-  ENGINE.create('http://192.168.0.2/',$('#myc'),600,340,()=>{
+  var myul=window.location.href.replace('index.html','');
+  ENGINE.create(myul,$('#myc'),600,340,()=>{
     $('#myc').append(
       `<div id="playdiv" align=center style="color:white;position: absolute;left: 50%;top: 50%;">          
       <br><input type="button" value="Play" onclick="ENGINE.GAME.play();" />  
