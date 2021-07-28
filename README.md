@@ -49,7 +49,7 @@ in '/client/index.js' line 3
 - Jquery
 - Jquery.ui
 
-### to do for now
+#### to do for now
 - calibrate dinamic camera
 - audio point and ambient fixes
 - fix some glitch on ground with physic body walk/run
