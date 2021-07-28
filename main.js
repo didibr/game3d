@@ -13,6 +13,7 @@ const sharp = require('sharp');
 //ADMIN LOGIN TO EDITING CREATING
 const ADMIN = 'didi';
 const PASS = '1234';
+const WebPort= 8080;
 
 const dir = {
   audio: 'audio/',
@@ -569,7 +570,7 @@ HTTP.AllowTransfer.add(".json", null, "application/json");
 //extension - default location(null=same as request) - mine type
 
 //Create WebServer
-var HTTPSERVER = HTTP.START(OnHttpRequest, 80);
+var HTTPSERVER = HTTP.START(OnHttpRequest, WebPort);
 
 //create Websocket
 SOCKET.protocolName = "game1";
