@@ -6,7 +6,7 @@ const fs = require('fs');
 const HELPER = require('./helper');
 
 var server = null;
-var Port = 80;
+var Port = 8080;
 var waitClose = false;
 
 var serverdir = __dirname;
