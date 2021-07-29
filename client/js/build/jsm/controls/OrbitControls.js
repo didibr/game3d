@@ -35,6 +35,7 @@ class OrbitControls extends EventDispatcher {
 
 		//didi
 		this.mouseEvent=function(){};
+		this.mouseWheel=function(){};
 		this.move={};
 
 		// Set to false to disable this control
@@ -335,11 +336,12 @@ class OrbitControls extends EventDispatcher {
 		const EPS = 0.000001;
 
 		// current position in spherical coordinates
-		const spherical = new Spherical();
+		scope.move.spherical = new Spherical();
+		const spherical = scope.move.spherical;//new Spherical();
 		const sphericalDelta = new Spherical();
 
 		let scale = 1;
-		const panOffset = new Vector3();
+		const panOffset = new Vector3();		
 		let zoomChanged = false;
 
 		const rotateStart = new Vector2();
@@ -1030,6 +1032,9 @@ class OrbitControls extends EventDispatcher {
 		}
 
 		function onMouseWheel( event ) {
+
+			//didi
+			scope.mouseWheel(event);
 
 			if ( scope.enabled === false || scope.enableZoom === false || ( state !== STATE.NONE && state !== STATE.ROTATE ) ) return;
 

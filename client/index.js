@@ -31,10 +31,11 @@ function jsload() {
   //loadJS('js/loader/TGALoader.js');
   loadJS('js/engine/socketw.js');
   loadJS('js/engine/socketo.js');
-  //loadJS('zip.js');  
+  //loadJS('zip.js');    
   loadJS('js/engine/helper.js');
   loadJS('js/engine/xshader.js');
   loadJS('js/engine/engine.js');  
+  loadJS('js/engine/gear/panorama.js');
   loadJS('js/engine/gear/light.js');
   loadJS('js/engine/gear/camera.js');
   loadJS('js/engine/gear/physic.js');

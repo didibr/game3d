@@ -300,52 +300,51 @@ ENGINE.Physic = {
 
       var distance = position.distanceTo(objPhys.move.destin);
       if(objPhys.move.distance==null){ //recalculate tistance and direction when fail
-        objPhys.move.distance=distance;
-        objPhys.move.direction=new THREE.Vector3().subVectors(objPhys.move.destin, position).normalize();
+        objPhys.move.distance=distance;        
       }
+      objPhys.move.direction=new THREE.Vector3().subVectors(objPhys.move.destin, position).normalize();
 
-      if (distance > objPhys.move.distance) { //end
+      //console.log(distance, objPhys.move.distance)
+
+      if (distance > objPhys.move.distance || distance<0.5) { //chegou no ponto ou ultrapassou
         objPhys.move.ACTIVE = false;
-        //objPhys.move.direction = null;
-
+        //##### ANIMATION AREA for IDLE /stop
         if (playerobj) {
           ANIMATED.change(login, 'idle', 10);
-          if(ENGINE.GAME._audioslist[login] &&
-             ENGINE.GAME._audioslist[login].snstep && 
-             ENGINE.GAME._audioslist[login].snstep.live &&
-             ENGINE.GAME._audioslist[login].snstep.live.isPlaying==true)
-             ENGINE.GAME._audioslist[login].snstep.live.stop();
-        }
-        //console.log('end',objPhys.move);
-        //objPhys.setLinearFactor(new  Ammo.btVector3(1, 1, 1));
-        //if (typeof (objPhys.move.complete) == 'function') objPhys.move.complete();
-      } else { //move
+          HELPER.footStepSound(login,'snstep','stop');          
+        }              
+      } else {                              //se movendo para a direcao
         //objPhys.setLinearFactor(new  Ammo.btVector3(1, 0, 1));
+        //objPhys.setLinearFactor(new  Ammo.btVector3(1, 1, 1));      
+
+        //##### ANIMATION AREA for walk
+        if(ENGINE.GAME._players[login].speedExtra>0 && distance<2){
+          ENGINE.GAME._players[login].speedExtra=0;
+          running=false;
+        }
 
         if (playerobj && running == true && playerobj.active != 'run') {
           ANIMATED.change(login, 'run', 10);
         }
-        if (playerobj && running == false && playerobj.active != 'walk') {
+        if (playerobj && running == false){          
+          if(playerobj.active != 'walk') {
           ANIMATED.change(login, 'walk', 10);
-          if(
-            ENGINE.GAME._audioslist[login] &&
-            ENGINE.GAME._audioslist[login].snstep && 
-            ENGINE.GAME._audioslist[login].snstep.live &&
-            ENGINE.GAME._audioslist[login].snstep.live.isPlaying!=true)
-            ENGINE.GAME._audioslist[login].snstep.live.play();
+          HELPER.footStepSound(login,'snstep','play');
+          }
+          //if(distance<1){
+            var lerped=Math.min(1, Math.max(0,distance-0.5));          
+            ANIMATED._data[login].action.walk.weight=lerped;
+            ENGINE.GAME._players[login].speedReduction=lerped;
+         // }
         }
         
-
         objPhys.fakeobj.position.addScaledVector(objPhys.move.direction, speemov * delta);
         
         objPhys.move.distance = distance;
         var dest=objPhys.move.destin.clone();
         //if(objPhys.fakeobj.position.y<1.76)objPhys.fakeobj.position.y=1.76;
         dest.y=objPhys.fakeobj.position.y+0.05;    
-        if (distance > 0.5) objPhys.fakeobj.lookAt(dest);
-
-        //objPhys.fakeobj.rotation.x=0;
-        //objPhys.fakeobj.rotation.z=0;
+        objPhys.fakeobj.lookAt(dest); //look at destin
 
         positionA.setValue(objPhys.fakeobj.position.x, objPhys.fakeobj.position.y, objPhys.fakeobj.position.z);
         world.setOrigin(positionA);

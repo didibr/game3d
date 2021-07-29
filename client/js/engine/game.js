@@ -1,5 +1,6 @@
 window._UN = 'undefined';
 ENGINE.GAME = {
+  _delta: 0,
   _me: {}, //my data
   _players: new Array(),//array same as mydata 
   _playerstemp: new Array(),//array same as mydata ( waiting to load on next fulloaded)
@@ -9,8 +10,8 @@ ENGINE.GAME = {
   _tiles: null,
   _currentmap: null,
   _speed: {
-    player: 2.3, cam: 1, camRotate: 1,
-            /*system*/camExtra: 0, mbLeft: 0, mbRight: 0, updTime: 5, clickspeed: 1
+    player: 2.3, cam: 1, camRotate: 1, clickspeed: 1, updTime: 5, zoomSp: 40,
+            /*system*/ mbLeft: 0, mbRight: 0, wheel: 0
   },
   _spawnposition: new THREE.Vector3(),
   _fullloaded: false,
@@ -34,8 +35,8 @@ ENGINE.GAME = {
   update: function (delta) {
     if (this._completeloaded == false) return;
     this.lastMovTime += delta;
+    //this.lastMovClick += delta;
     CONTROLS.update(delta); //update camera position
-    this.checkstate();
     this.cameraFocusPlayer(delta); //update camera target position (folow player smooth)    
     this.updatePlayerState(delta);
     this.updateColiders(delta);
@@ -51,10 +52,9 @@ ENGINE.GAME = {
     requestAnimationFrame(ENGINE.GAME.renderupdate);
   },
 
-  checkstate: function () {
-
-  },
-
+  _xa: 1,
+  _lastPolar: 0,
+  _realzoom: 0,
   cameraFocusPlayer: function (delta) {
     if (typeof (CONTROLS.screenSpacePanning) == _UN ||
       Object.keys(ENGINE.GAME._players).length < 1 ||
@@ -65,19 +65,92 @@ ENGINE.GAME = {
     var distance = CONTROLS.target.distanceTo(this._me.pos);
     var direction = new THREE.Vector3().subVectors(this._me.pos, CONTROLS.target).normalize();
 
-    var speedBase = this._speed.cam + this._speed.camExtra;
+
+    var maxpol = 2.4329528684033384; //minimun inferior angle under ground line
+    var minpol = { up: 0.1728786603604932, dow: 1.3712127935080203 } //maximum superior angle 0up 3.14dow   
+    var groundline = Math.PI / 2; //angle when camera colide ground
+    var actualangle = CONTROLS.getPolarAngle(); //actual angle of camera
+    var madistance = CONTROLS.maxDistance; //active camera distance zomm
+
+    //################ Folow Player Smooth
+    var speedBase = this._speed.cam;//+ this._speed.camExtra;
+    if (this._speed.mbRight == 1) this._speed.cam + 5;
     var aplyspeed = 0;
     if (distance > 1) {
-      aplyspeed = (speedBase * distance) * delta;
+      aplyspeed = ((0.12 / madistance) * 100) * (speedBase * distance) * delta;
     } else {
-      aplyspeed = speedBase * delta;
+      aplyspeed = ((0.12 / madistance) * 100) * (speedBase) * delta;
     }
     if (distance > 0.05) {
       CONTROLS.target.addScaledVector(direction, aplyspeed);
+      //set minimun angle to chase can over ground
+      if (actualangle > groundline) CONTROLS.minPolarAngle = groundline;
+      //smoooth back camera to permited angle
+      if (this._lastPolar != 0) {
+        if (actualangle > this._lastPolar) {
+          actualangle -= 0.1 * delta;
+        } else {
+          actualangle += 0.1 * delta;
+        }
+        CONTROLS.maxPolarAngle = actualangle;
+        CONTROLS.minPolarAngle = actualangle;
+        if (Math.abs(actualangle - this._lastPolar) < 0.02) {
+          this._lastPolar = 0;
+        }
+      }
     }
-    //change camera position   
+
+    //################ angle controller
+    if (ENGINE.GAME._speed.mbRight == 1) { //permit agle change on mbleft pressed
+      if (this._lastPolar == 0) {
+        this._lastPolar = actualangle;
+      } else { //permission bttwen min/max
+        if (this._lastPolar != actualangle && actualangle > minpol.up && actualangle < minpol.dow) {
+          this._lastPolar = actualangle;
+        }
+      }
+      CONTROLS.maxPolarAngle = maxpol;//2.7;
+      CONTROLS.minPolarAngle = minpol.up;
+    } else {
+    }
+
+    //################ upside camera //zoom camera when too close          
+    if (actualangle > groundline) {
+      if (this._realzoom == 0) this._realzoom = madistance;
+      var difang = actualangle - groundline;
+      var zoomin = 1 / (2 * (difang * 0.5));
+      if (zoomin < this._realzoom && zoomin > maxpol) {
+        CONTROLS.minDistance = zoomin;
+        CONTROLS.maxDistance = zoomin;
+        return;
+      }
+    } else {
+      if (this._realzoom != 0) {
+        CONTROLS.minDistance = this._realzoom;
+        CONTROLS.maxDistance = this._realzoom;
+        this._realzoom = 0;
+      }
+    }
+
+    //################ Zoom Controler Setter //pemit zoom change on mouse wheel
+    var whellcontrol = 0;
+    var whellval = ENGINE.GAME._speed.wheel;
+    if (whellval && whellval != 0) {
+      if (whellval < 0) whellcontrol = (whellval * ENGINE.GAME._speed.zoomSp) * delta
+      if (whellval > 0) whellcontrol = (whellval * ENGINE.GAME._speed.zoomSp) * delta
+      ENGINE.GAME._speed.wheel = 0;
+      var calculado = CONTROLS.minDistance + whellcontrol;
+      //console.log(calculado)
+      if (calculado > 4 && calculado < 14) {
+        CONTROLS.minDistance = calculado;
+        CONTROLS.maxDistance = calculado;
+      }
+    }
+
+
+    //change camera position 
     return;
-    if (ENGINE.GAME._players.mbRight == 1) return;
+    if (ENGINE.GAME._speed.mbRight == 1) return;
     if (!ENGINE.GAME._players[ENGINE.login] ||
       !ENGINE.GAME._players[ENGINE.login].angle ||
       !ENGINE.GAME._players[ENGINE.login].angle.isVector3) return;
@@ -86,22 +159,32 @@ ENGINE.GAME = {
     var camA3d = new THREE.Vector3(); ENGINE.camera.getWorldDirection(camA3d);
     var camAngle = THREE.Math.radToDeg(Math.atan2(camA3d.x, camA3d.z));
     var diference = 0;
+    var rotation = 0;
+    var damping = 120;
     if (playerAngle > camAngle) { //camera at left
       diference = playerAngle - camAngle;
-      if (diference > 45)
-        CONTROLS.move.rotateLeft(-(ENGINE.GAME._speed.camRotate * (diference / 180)) * delta);
+      if (diference > 45) {
+        rotation = - (ENGINE.GAME._speed.camRotate * (diference / damping)) * delta;
+        if (diference > 130) this._fastrotate = - delta * 2;
+      } else this._fastrotate = 0;
+      //CONTROLS.move.rotateLeft(-(ENGINE.GAME._speed.camRotate * (diference / 20)) * delta);
     } else { //camera at right
       diference = camAngle - playerAngle;
-      if (diference > 45)
-        CONTROLS.move.rotateLeft((ENGINE.GAME._speed.camRotate * (diference / 180)) * delta);
+      if (diference > 45) {
+        rotation = (ENGINE.GAME._speed.camRotate * (diference / damping)) * delta;
+        if (diference > 130) this._fastrotate = delta * 2;
+      } else this._fastrotate = 0;
+      //CONTROLS.move.rotateLeft((ENGINE.GAME._speed.camRotate * (diference / 20)) * delta);
     }
+    if (this._fastrotate != 0) { CONTROLS.move.rotateLeft(this._fastrotate); return; }
+    if (rotation != 0) CONTROLS.move.rotateLeft(rotation);
   },
 
 
   updatePlayerState: function (delta) {
     this._updatePlayersTimer += delta; //time to update player state
     if (this._updatePlayersTimer > this._speed.updTime && typeof (ANIMATED._data[ENGINE.login]) !== _UN) {
-      console.log('update')
+      //console.log('update')
       var annime = ANIMATED._data[ENGINE.login];
       var object = annime.shape;
       var moves = object.userData.physicsBody.move;
@@ -141,7 +224,6 @@ ENGINE.GAME = {
   },
 
   colideTreat: function (obja, objb) {
-    return;
     var player = null;
     var object = null;
     var mode = '';
@@ -242,20 +324,27 @@ ENGINE.GAME = {
   },
 
 
+  mouseWheel: function (event) {
+    if (this._completeloaded == false) return;
+    if (!event.deltaY) return;
+    //event.deltaY < 0 rotate up / > 0 rotate down / 0 no rotation  
+    if (event.deltaY < 0) {
+      ENGINE.GAME._speed.wheel -= 0.5;
+    } else if (event.deltaY > 0) {
+      ENGINE.GAME._speed.wheel += 0.5;
+    }
+
+  },
 
   mouseEvent: function (event, down) { //detect Right click fast focus player        
-
     if (this._completeloaded == false || typeof (event.button) == _UN) return;
     //down 1= down 0 up
     //event.button = 0=left 1=midle 2right
-
     if (event.button == 2)
       if (down == 1) {
-        ENGINE.GAME._speed.camExtra = 3;
-        ENGINE.GAME._players.mbRight = 1;
+        ENGINE.GAME._speed.mbRight = 1;
       } else {
-        ENGINE.GAME._speed.camExtra = 0;
-        ENGINE.GAME._players.mbRight = 0;
+        ENGINE.GAME._speed.mbRight = 0;
       }
 
     if (event.button == 0)
@@ -264,7 +353,6 @@ ENGINE.GAME = {
       } else {
         ENGINE.GAME._speed.mbLeft = 0;
       }
-
   },
 
   playerAction: function (action) { //Change Player State
@@ -288,12 +376,12 @@ ENGINE.GAME = {
     if (socklocal.endsWith('/') == true) socklocal = socklocal.substr(0, socklocal.length - 1);
     var socketws = ENGINE.url.replace('http://', '') == ENGINE.url ? 'wss://' : 'ws://';
     console.log(socketws + socklocal);
-    var metod = startCONFIG.worker_socket==true ? 1 : 0;
+    var metod = startCONFIG.worker_socket == true ? 1 : 0;
     if (metod == 1) { //############### using webworkers
       console.log('Using WebWorkers');
-      webSocketWorker.port.addEventListener('message', (receive) => {        
+      webSocketWorker.port.addEventListener('message', (receive) => {
         requestAnimationFrame(() => {
-          ENGINE.GAME.messagew(receive);          
+          ENGINE.GAME.messagew(receive);
         });
       });
       WSconnect(socketws + socklocal);
@@ -302,13 +390,14 @@ ENGINE.GAME = {
       console.log('Using Vanila');
       WSOmessage = (receive) => {
         requestAnimationFrame(() => {
-          ENGINE.GAME.messagew(receive);          
+          ENGINE.GAME.messagew(receive);
         });
       }
-      WSsend=WSOsend;
+      WSsend = WSOsend;
       WSOconnect(socketws + socklocal);
     }
     requestAnimationFrame(ENGINE.GAME.renderupdate);
+
     //this._getPlayerConfig();
     /* SOCKET.wsConnect(socklocal, (error) => {
        if (typeof (error) !== _UN) {
@@ -364,9 +453,9 @@ ENGINE.GAME = {
     ENGINE.renderer.setClearColor('black');
     ENGINE.DIALOG.reset();
     ENGINE.Physic.skinMaterial.visible = false;
+    ENGINE.Physic.physicMaterial.opacity = 0;
     ENGINE.debugRay = false;
     ENGINE.Physic.debugPhysics = true;
-    ENGINE.Physic.skinMaterial.visible = true;
     HELPER.hideTransform();
     ENGINE.scene.visible = false;
     ENGINE.showLoading(true);
@@ -466,7 +555,7 @@ ENGINE.GAME = {
           l1.target.position.set(lc.tpos.x, lc.tpos.y, lc.tpos.z);
         }
         if (lc.issun == true) l1.isSun = true;
-        if (l1.helper.parent) {
+        if (l1.helper && l1.helper.parent) {
           //if(l1.helper.parent.target.parent){
           //  l1.helper.parent.target.parent.remove(l1.helper.parent.target);
           // }
@@ -480,6 +569,14 @@ ENGINE.GAME = {
     if (typeof (script) !== _UN) {
       HELPER.script(script);
       //$('#mscript').val(script);
+    }
+
+    //sky
+    window.DTA = data;
+    var sky = data.sky;
+    if (typeof (sky) != _UN) {
+      console.log(ENGINE.url + 'images/' + sky.bg);
+      ENGINE.SKY.create(this._tiles, ENGINE.url + 'images/' + sky.bg);//'./images/pano0.jpg'
     }
 
     //console.log(this._entityCount)
@@ -562,9 +659,11 @@ ENGINE.GAME = {
             add(new THREE.Vector3(0, 10, 0)).
             sub(new THREE.Vector3(0, 0, 5));
           ENGINE.CAM.change(ENGINE.CAM.MODEL.ORBIT, campos, ANIMATED._data[player.login].shape);
-          CONTROLS.minDistance = 3;
+          CONTROLS.minDistance = 14;
           CONTROLS.maxDistance = 14;
+          CONTROLS.rotateSpeed = 0.4;
           CONTROLS.maxPolarAngle = CONTROLS.minPolarAngle = 0.5728786603604932;
+
           CONTROLS.screenSpacePanning = false;
           CONTROLS.enablePan = false;
           CONTROLS.mouseButtons = {
@@ -578,12 +677,47 @@ ENGINE.GAME = {
     }
   },
 
-  clearCache: function () {
+  _firstcomplete: false,
+  clearCache: async function () {
     this._playerstemp = [];
     ENGINE.showLoading(false);
     ENGINE.scene.visible = true;
     this._completeloaded = true;
+    this.revivePlayerAudio();
+    if (this._firstcomplete != false) return;
+    _firstcomplete = true;
+    var listener = await LISTENER();
+    if (listener.setMasterVolume)
+      var smooth = setInterval(function () {
+        var volu = listener.getMasterVolume();
+        if (volu < 1) {
+          listener.setMasterVolume(volu + 0.02);
+        } else {
+          listener.setMasterVolume(1);
+          clearInterval(volu);
+        }
+      }, 10);
+
   },
+
+
+  revivePlayerAudio() {
+    for (var i = 0; i < Object.keys(this._audioslist).length; i++) {
+      var login = Object.keys(this._audioslist)[i];
+      var arrayaudio = this._audioslist[login];
+      if (ANIMATED._data[login] && ANIMATED._data[login].audio) { //only if model exist
+        var audiholder = ANIMATED._data[login].audio;
+        for (var e = 0; e < Object.keys(arrayaudio).length; e++) {
+          var sndname = Object.keys(arrayaudio)[e];
+          if (!arrayaudio[sndname].positioned && arrayaudio[sndname].live) {
+            arrayaudio[sndname].positioned = true;
+            audiholder.add(arrayaudio[sndname].live);
+          }
+        }
+      }
+    }
+  },
+
 
   playerLeave: function (login) {
     if (ENGINE.GAME._itenslist[login].itens)//remove owned itens
@@ -692,7 +826,7 @@ ENGINE.GAME = {
   _cacheEntitySounds: async function (entityName, audios, tile) {
     if (typeof (this._audioslist[entityName]) == _UN) {
       if (typeof (audios) == _UN) audios = new Array();
-      console.log('cache', entityName, audios)
+      //console.log('cache', entityName, audios)
       for (var i = 0; i < audios.length; i++) {
         if (typeof (this._audioslist[entityName]) == _UN) this._audioslist[entityName] = {};
         this._audioslist[entityName][audios[i].id] = { audio: audios[i].audio };
@@ -849,7 +983,8 @@ ENGINE.GAME = {
         this._actors[i].pos = actPos;
         this._actors[i].obj = spphere;
         this._actors[i].obj.visible = false;//ENGINE.Physic.debugPhysics;
-        this._actors[i].physic = ENGINE.Physic.addPhisicBox(actPos, new THREE.Quaternion(), { x: 1.5, y: 0.01, z: 1.5 });
+        this._actors[i].physic =
+          ENGINE.Physic.addPhisicBox(actPos, new THREE.Quaternion(), { x: 1.5, y: 0.01, z: 1.5 });
         this._actors[i].physic.userData.physicsBody.setMassProps(1, 1)
         this._actors[i].physic.group.type = 'Actor';
         this._actors[i].physic.group.act = this._actors[i].act;
@@ -870,8 +1005,10 @@ ENGINE.GAME = {
         var tile = ENGINE.TILE.getTileByXY(tileName[0], tileName[1]);
         var actPos = tile.position.clone().add(new THREE.Vector3(pos.x, pos.y, pos.z));
         this.addasphereSound(sndarr.audio.name);
-        sndarr.audio.obj.position.copy(actPos);
-        sndarr.audio.obj.visible = true;
+        if (sndarr.audio.obj != null) {
+          sndarr.audio.obj.position.copy(actPos);
+          sndarr.audio.obj.visible = true;
+        }
       }
     }
     //ENGINE.EDITORM._updateSoundList();
@@ -929,8 +1066,8 @@ ENGINE.GAME = {
 
 
 
-  _loadComplete: function () {
-    setTimeout(() => {
+  _loadComplete: async function () {
+    setTimeout(async () => {
 
       ENGINE.GAME._fullloaded = true;
       //ENGINE.GAME._freezeActors();
@@ -946,6 +1083,7 @@ ENGINE.GAME = {
       $(window).off("keydown").on("keydown", this.onDocumentKeyDown);
       $(ENGINE.canvObj).off("click").on("click", this.onCanvasClick);
       CONTROLS.mouseEvent = ENGINE.GAME.mouseEvent;
+      CONTROLS.mouseWheel = ENGINE.GAME.mouseWheel;
 
     }, 500);
   },
@@ -971,37 +1109,49 @@ ENGINE.GAME = {
     }
   },
 
-  lastMovTime: 0,
+
+  lastMovTime: 0, //update mov position broadcast
   onCanvasClick: function (event) {
     if (ENGINE.GAME.disableTileClick == true || typeof (ENGINE.intersects) == _UN) return;
-    if (ENGINE.intersects.length <= 0 || typeof (ENGINE.intersects[0].object) == _UN) return;
-    if (ENGINE.GAME.lastMovTime < ENGINE.GAME._speed.clickspeed) return;
+    if (ENGINE.intersects.length <= 0) return;
     if (typeof (ENGINE.GAME._players[ENGINE.login]) == _UN) return;
-    var contact = ENGINE.intersects[0];
+    var contact = null;//ENGINE.intersects[0];
+
+    for (var i = 0; i < ENGINE.intersects.length; i++) {
+      var value = ENGINE.intersects[i];
+      if (value && value.object && value.object.group && value.object.group.name)
+        if (value.object.group.name == 'Tile') {
+          contact = value;
+          break;
+        }
+    }
+    if (!contact) return;
     var object = contact.object; //first encounter
     if (typeof (object.group) == _UN) return;
 
-    if (object.group.name == 'Tile') {//      
-      var playerdata = ENGINE.GAME._players[ENGINE.login];
-      var pos = { x: contact.point.x, y: contact.point.y, z: contact.point.z };
-      var speed = typeof (playerdata.speed) == _UN ? ENGINE.GAME._speed.player : playerdata.speed;
-      var speedExtra = typeof (playerdata.speedExtra) == _UN ? 0 : playerdata.speedExtra;
-      var destin = {
-        square: object.group.square,
-        pos: pos,
-        speed: speed,
-        speedExtra: speedExtra
-      }
-      ENGINE.Physic.bodyMove(
-        ANIMATED._data[ENGINE.login].shape,
-        new THREE.Vector3(pos.x, pos.y, pos.z), speed + speedExtra, ENGINE.login);
-      _moveRow = { userdata: playerdata, destin: destin };
-      //WSsend('MOVETOX', { userdata: playerdata, destin: destin });
-      ENGINE.GAME.lastMovTime = 0;
-
-      //console.log('sendmov', data);
-      return;
+    var playerdata = ENGINE.GAME._players[ENGINE.login];
+    var pos = { x: contact.point.x, y: contact.point.y, z: contact.point.z };
+    var speed = typeof (playerdata.speed) == _UN ? ENGINE.GAME._speed.player : playerdata.speed;
+    var speedExtra = typeof (playerdata.speedExtra) == _UN ? 0 : playerdata.speedExtra;
+    var speedReduction = typeof (playerdata.speedReduction) == _UN ? 0 : playerdata.speedReduction;    
+    var destin = {
+      square: object.group.square,
+      pos: pos,
+      speed: speed,
+      speedExtra: speedExtra,
+      speedReduction:speedReduction
     }
+    ENGINE.Physic.bodyMove(
+      ANIMATED._data[ENGINE.login].shape,
+      new THREE.Vector3(pos.x, pos.y, pos.z), (speed + speedExtra)*speedReduction, ENGINE.login);
+    if (ENGINE.GAME.lastMovTime > ENGINE.GAME._speed.clickspeed) {
+      _moveRow = { userdata: playerdata, destin: destin };
+      ENGINE.GAME.lastMovTime = 0;
+    }
+
+
+
+
   },
 
   messagew: function (received) {
@@ -1106,10 +1256,12 @@ ENGINE.GAME = {
       var movto = new THREE.Vector3().copy(data.MOVETO.destin.pos);
       var speed = data.MOVETO.destin.speed;
       var speedExtra = data.MOVETO.destin.speedExtra;
+      var speedReduction = data.MOVETO.destin.speedReduction; //0 to 1  
+      speed=(speed + (isNaN(speedExtra)==true? 0 : speedExtra)) * (isNaN(speedReduction)==true? 0 : speedReduction)   
       //if (typeof (speedExtra) == _UN) speedExtra = 0;
       //ENGINE.GAME._players[data.MOVETO.login].speedExtra = data.MOVETO.speedExtra;
       //if (ANIMATED._data[data.MOVETO.login].active == 'idle')ANIMATED.change(data.MOVETO.login, 'walk', 10);
-      ENGINE.Physic.bodyMove(object, movto, speed + speedExtra, data.MOVETO.login);
+      ENGINE.Physic.bodyMove(object, movto, speed, data.MOVETO.login);
       /*, () => {
         ANIMATED.change(data.MOVETO.login, 'idle', 10);
         var pos = { x: object.position.x, y: object.position.y, z: object.position.z };

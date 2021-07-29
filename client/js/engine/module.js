@@ -47,11 +47,12 @@ window.CONTROLS = null;
 window.LISTENER = async ()=>{
   if(typeof(audioListener)=='undefined' || audioListener==null){
     audioListener=new THREE.AudioListener();
+    audioListener.setMasterVolume(0);
     ENGINE.camera.add(audioListener);
-    console.log('create listener');
+    //console.log('create listener');
     return audioListener;
   }
-  console.log('using exitent listener');
+  //console.log('using exitent listener');
   return audioListener;
 };
 

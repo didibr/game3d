@@ -317,13 +317,13 @@ var HELPER = {
     }
   },
 
- 
+
 
   objaddToBone: function (val, name, boneNumber) {
     var boneName = HELPER.getBonneByNumber(boneNumber);
     if (ANIMATED._data[name].bones[boneName]) {
       ANIMATED._data[name].bones[boneName].attach(val._OBJ3d);
-      
+
       if (!val._Attached[boneNumber]) {
         val._Attached[boneNumber] =
           { _Pos: { x: 0, y: 0, z: 0 }, _Scale: { x: 1, y: 1, z: 1 }, _Quat: { x: 0, y: 0, z: 0, w: 1 } };
@@ -370,9 +370,9 @@ var HELPER = {
       audio.setBuffer(buffered.buffer);
       audio.loop = buffered.loop;
       audio.setVolume(buffered.volume);
-      if(obj!=null)obj.add(audio);
-      if (typeof (callback) != _UN) 
-      callback({audio:audio, loop: buffered.loop, volume: buffered.volume });
+      if (obj != null) obj.add(audio);
+      if (typeof (callback) != _UN)
+        callback({ audio: audio, loop: buffered.loop, volume: buffered.volume });
       return;
     }
     var audiolist = await HELPER.simpleDownloadSync(audioFile);
@@ -382,14 +382,14 @@ var HELPER = {
       var volume = audiolist.audio[i].volume
       var soundFile = ENGINE.url + ENGINE.conf.dir.audio + file; //audio file
       console.log('load audio');
-      LOADER.audioLoader.load(soundFile,async function (buffer) {
+      LOADER.audioLoader.load(soundFile, async function (buffer) {
         const audio = new THREE.PositionalAudio(await LISTENER());
         audio.setBuffer(buffer);
         audio.loop = loop;
         audio.setVolume(volume);
         //HELPER._audioBuffer[audioFile] = { buffer: buffer, loop: loop, volume: volume };
-        if(obj!=null)obj.add(audio);
-        if (typeof (callback) != _UN) callback({ audio:audio, loop: loop, volume: volume });
+        if (obj != null) obj.add(audio);
+        if (typeof (callback) != _UN) callback({ audio: audio, loop: loop, volume: volume });
       });
     }
 
@@ -401,9 +401,24 @@ var HELPER = {
 
     }
   })*/
+  },
 
 
+  footStepSound: function (player, snstep, action) {
+    if (ENGINE.GAME._audioslist[player] &&
+      ENGINE.GAME._audioslist[player][snstep] &&
+      ENGINE.GAME._audioslist[player][snstep].live) {
+      if (action == 'stop') {
+        if(ENGINE.GAME._audioslist[player][snstep].live.isPlaying==true)
+        ENGINE.GAME._audioslist[player][snstep].live.stop();
+      }
+      if (action == 'play') {
+        if(ENGINE.GAME._audioslist[player][snstep].live.isPlaying != true)
+        ENGINE.GAME._audioslist[player][snstep].live.play();
+      }
+    }
   }
+
 
 
 

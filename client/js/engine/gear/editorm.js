@@ -332,7 +332,12 @@ ENGINE.EDITORM = {
         var activeobj=ENGINE.EDITORM._sounds[i].audio;
         var tilepos= activeobj.pos;        
             tilepos=new THREE.Vector3(tilepos.x,tilepos.y,tilepos.z);
-        var realpos = activeobj.obj.position.clone().sub(tilepos);
+        var realpos = null;
+        if(activeobj.obj && activeobj.obj!=null){
+          realpos=activeobj.obj.position.clone().sub(tilepos);
+        }else{
+          realpos=new THREE.Vector3(activeobj.pos.x,activeobj.pos.y,activeobj.pos.z);
+        }        
         var audio= {             
             name: activeobj.name, 
             audio: activeobj.audio, 
@@ -473,6 +478,7 @@ ENGINE.EDITORM = {
           light: jsonligth,
           actor: jsonactor,
           audio: jsonaudio,
+          sky: {bg:"pano0.jpg"},
           script: $('#mscript').val()
         }
       });
