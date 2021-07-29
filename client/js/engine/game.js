@@ -286,7 +286,7 @@ ENGINE.GAME = {
     ENGINE.pass = $('#DIALOGPASS').val();
     var socklocal = ENGINE.url.replace('http://', '').replace('https://', '').replace('//', '');
     if (socklocal.endsWith('/') == true) socklocal = socklocal.substr(0, socklocal.length - 1);
-    var socketws = ENGINE.url.replace('http://', '') == ENGINE.url ? 'wss//' : 'ws://';
+    var socketws = ENGINE.url.replace('http://', '') == ENGINE.url ? 'wss://' : 'ws://';
     console.log(socketws + socklocal);
     var metod = startCONFIG.worker_socket==true ? 1 : 0;
     if (metod == 1) { //############### using webworkers
