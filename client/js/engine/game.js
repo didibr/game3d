@@ -1133,17 +1133,16 @@ ENGINE.GAME = {
     var pos = { x: contact.point.x, y: contact.point.y, z: contact.point.z };
     var speed = typeof (playerdata.speed) == _UN ? ENGINE.GAME._speed.player : playerdata.speed;
     var speedExtra = typeof (playerdata.speedExtra) == _UN ? 0 : playerdata.speedExtra;
-    var speedReduction = typeof (playerdata.speedReduction) == _UN ? 0 : playerdata.speedReduction;    
+
     var destin = {
       square: object.group.square,
       pos: pos,
       speed: speed,
       speedExtra: speedExtra,
-      speedReduction:speedReduction
     }
     ENGINE.Physic.bodyMove(
       ANIMATED._data[ENGINE.login].shape,
-      new THREE.Vector3(pos.x, pos.y, pos.z), (speed + speedExtra)*speedReduction, ENGINE.login);
+      new THREE.Vector3(pos.x, pos.y, pos.z), (speed + speedExtra), ENGINE.login);
     if (ENGINE.GAME.lastMovTime > ENGINE.GAME._speed.clickspeed) {
       _moveRow = { userdata: playerdata, destin: destin };
       ENGINE.GAME.lastMovTime = 0;
@@ -1256,8 +1255,8 @@ ENGINE.GAME = {
       var movto = new THREE.Vector3().copy(data.MOVETO.destin.pos);
       var speed = data.MOVETO.destin.speed;
       var speedExtra = data.MOVETO.destin.speedExtra;
-      var speedReduction = data.MOVETO.destin.speedReduction; //0 to 1  
-      speed=(speed + (isNaN(speedExtra)==true? 0 : speedExtra)) * (isNaN(speedReduction)==true? 0 : speedReduction)   
+     
+      speed=(speed + (isNaN(speedExtra)==true? 0 : speedExtra))  ;
       //if (typeof (speedExtra) == _UN) speedExtra = 0;
       //ENGINE.GAME._players[data.MOVETO.login].speedExtra = data.MOVETO.speedExtra;
       //if (ANIMATED._data[data.MOVETO.login].active == 'idle')ANIMATED.change(data.MOVETO.login, 'walk', 10);

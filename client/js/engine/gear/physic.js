@@ -332,9 +332,9 @@ ENGINE.Physic = {
           HELPER.footStepSound(login,'snstep','play');
           }
           //if(distance<1){
-            var lerped=Math.min(1, Math.max(0,distance-0.5));          
-            ANIMATED._data[login].action.walk.weight=lerped;
-            ENGINE.GAME._players[login].speedReduction=lerped;
+           // var lerped=Math.min(1, Math.max(0,distance-0.5));          
+           // ANIMATED._data[login].action.walk.weight=lerped;
+            //ENGINE.GAME._players[login].speedReduction=lerped;
          // }
         }
         
