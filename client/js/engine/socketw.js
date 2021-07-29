@@ -1,6 +1,6 @@
 
 const webSocketWorker = new SharedWorker('js/engine/socket.js');
-const WSsend = (key,message) => {
+var WSsend = (key,message) => {
     console.log(key,message);
   webSocketWorker.port.postMessage({ 
     action: 'send', 

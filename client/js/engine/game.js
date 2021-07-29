@@ -8,8 +8,10 @@ ENGINE.GAME = {
   _sounds: new Array(), //buff sounds ambient
   _tiles: null,
   _currentmap: null,
-  _speed: {   player: 2.3, cam: 1, camRotate: 1, 
-            /*system*/camExtra: 0, mbLeft: 0, mbRight: 0, updTime: 5, clickspeed: 1 },
+  _speed: {
+    player: 2.3, cam: 1, camRotate: 1,
+            /*system*/camExtra: 0, mbLeft: 0, mbRight: 0, updTime: 5, clickspeed: 1
+  },
   _spawnposition: new THREE.Vector3(),
   _fullloaded: false,
   _completeloaded: false,
@@ -27,7 +29,7 @@ ENGINE.GAME = {
   _updatePlayersTimer: 0,            //broadcast time (players state)
   _updateColidersTimer: 0,            //broadcast time (players state)
 
-  _moveRow:null,
+  _moveRow: null,
 
   update: function (delta) {
     if (this._completeloaded == false) return;
@@ -41,16 +43,16 @@ ENGINE.GAME = {
   },
 
 
-  renderupdate:function(){
-    if(this._moveRow!=null){
+  renderupdate: function () {
+    if (this._moveRow != null) {
       WSsend('MOVETO', this._moveRow);
-      this._moveRow=null;
-    }    
+      this._moveRow = null;
+    }
     requestAnimationFrame(ENGINE.GAME.renderupdate);
   },
 
   checkstate: function () {
-    
+
   },
 
   cameraFocusPlayer: function (delta) {
@@ -242,7 +244,7 @@ ENGINE.GAME = {
 
 
   mouseEvent: function (event, down) { //detect Right click fast focus player        
-    
+
     if (this._completeloaded == false || typeof (event.button) == _UN) return;
     //down 1= down 0 up
     //event.button = 0=left 1=midle 2right
@@ -283,39 +285,52 @@ ENGINE.GAME = {
     ENGINE.login = $('#DIALOGLOGIN').val();
     ENGINE.pass = $('#DIALOGPASS').val();
     var socklocal = ENGINE.url.replace('http://', '').replace('https://', '').replace('//', '');
-    if(socklocal.endsWith('/')==true)socklocal=socklocal.substr(0,socklocal.length-1);
-    var socketws= ENGINE.url.replace('http://', '')==ENGINE.url ? 'wss//' : 'ws://';
-    console.log(socketws+socklocal);
-    webSocketWorker.port.addEventListener('message', ( receive ) => {
-      requestAnimationFrame(() => {    
-        ENGINE.GAME.messagew(receive);
-        //console.log(receive);
-      });
-    });
-    WSconnect(socketws+socklocal);   
-    requestAnimationFrame(ENGINE.GAME.renderupdate);     
-    //this._getPlayerConfig();
-   /* SOCKET.wsConnect(socklocal, (error) => {
-      if (typeof (error) !== _UN) {
-        SOCKET.secure = !SOCKET.secure; //try inverse secure
-        error = undefined;
-        SOCKET.wsConnect(socklocal, (error) => {
-          if (typeof (error) !== _UN) {
-            ENGINE.DIALOG.popup('<br><br>Impossible to Connect to:<br>' + socklocal, 'Socket Error')
-          } else {
-            this._getPlayerConfig();
-          }
+    if (socklocal.endsWith('/') == true) socklocal = socklocal.substr(0, socklocal.length - 1);
+    var socketws = ENGINE.url.replace('http://', '') == ENGINE.url ? 'wss//' : 'ws://';
+    console.log(socketws + socklocal);
+    var metod = startCONFIG.worker_socket==true ? 1 : 0;
+    if (metod == 1) { //############### using webworkers
+      console.log('Using WebWorkers');
+      webSocketWorker.port.addEventListener('message', (receive) => {        
+        requestAnimationFrame(() => {
+          ENGINE.GAME.messagew(receive);          
         });
-      } else {
-        this._getPlayerConfig();
+      });
+      WSconnect(socketws + socklocal);
+    }
+    if (metod == 0) {//############### using pure socket
+      console.log('Using Vanila');
+      WSOmessage = (receive) => {
+        requestAnimationFrame(() => {
+          ENGINE.GAME.messagew(receive);          
+        });
       }
-    });
-    */
+      WSsend=WSOsend;
+      WSOconnect(socketws + socklocal);
+    }
+    requestAnimationFrame(ENGINE.GAME.renderupdate);
+    //this._getPlayerConfig();
+    /* SOCKET.wsConnect(socklocal, (error) => {
+       if (typeof (error) !== _UN) {
+         SOCKET.secure = !SOCKET.secure; //try inverse secure
+         error = undefined;
+         SOCKET.wsConnect(socklocal, (error) => {
+           if (typeof (error) !== _UN) {
+             ENGINE.DIALOG.popup('<br><br>Impossible to Connect to:<br>' + socklocal, 'Socket Error')
+           } else {
+             this._getPlayerConfig();
+           }
+         });
+       } else {
+         this._getPlayerConfig();
+       }
+     });
+     */
   },
 
 
-  _getPlayerConfig: function () {    
-      WSsend('GETPLAYERCONFIG', { login: ENGINE.login, pass: ENGINE.pass });
+  _getPlayerConfig: function () {
+    WSsend('GETPLAYERCONFIG', { login: ENGINE.login, pass: ENGINE.pass });
   },
 
   _newLogin: function (action) {
@@ -323,15 +338,15 @@ ENGINE.GAME = {
       this.message({ INVALIDLOGIN: 'XX' })
     } else {
       //SOCKET.recon(function () {
-        ENGINE.login = $('#xlogin').val();
-        WSsend('NEWLOGIN', {
-          login: $('#xlogin').val(),
-          pass1: $('#xpass1').val(),
-          pass2: $('#xpass2').val(),
-          mail: $('#axmail').val(),
-          bdate: $('#xdate').val()
-        });
-     // });
+      ENGINE.login = $('#xlogin').val();
+      WSsend('NEWLOGIN', {
+        login: $('#xlogin').val(),
+        pass1: $('#xpass1').val(),
+        pass2: $('#xpass2').val(),
+        mail: $('#axmail').val(),
+        bdate: $('#xdate').val()
+      });
+      // });
     }
   },
 
@@ -636,7 +651,7 @@ ENGINE.GAME = {
 
           } else {
             startposition = ENGINE.GAME._spawnposition.clone();
-           // console.log('new', startposition)
+            // console.log('new', startposition)
           }
         } else { //entity
           data.pos = new THREE.Vector3(
@@ -980,7 +995,7 @@ ENGINE.GAME = {
       ENGINE.Physic.bodyMove(
         ANIMATED._data[ENGINE.login].shape,
         new THREE.Vector3(pos.x, pos.y, pos.z), speed + speedExtra, ENGINE.login);
-      _moveRow={ userdata: playerdata, destin: destin };
+      _moveRow = { userdata: playerdata, destin: destin };
       //WSsend('MOVETOX', { userdata: playerdata, destin: destin });
       ENGINE.GAME.lastMovTime = 0;
 
@@ -989,21 +1004,21 @@ ENGINE.GAME = {
     }
   },
 
-  messagew:function(received){    
+  messagew: function (received) {
     //window.RC=received;
     //console.log('rcv',received);        
-    if(!received.data)return;
-    try{
-      var JSONDATA = JSON.parse(JSON.stringify(received.data));      
-      if(JSONDATA.CONNECTED){
+    if (!received.data) return;
+    try {
+      var JSONDATA = JSON.parse(JSON.stringify(received.data));
+      if (JSONDATA.CONNECTED) {
         console.log('connected');
         ENGINE.GAME._getPlayerConfig();
-      }else{
+      } else {
         ENGINE.GAME.message(JSONDATA);
       }
-    }catch(e){
-      console.warn('messagew Error',e);
-    }        
+    } catch (e) {
+      console.warn('messagew Error', e);
+    }
   },
 
   message: function (data) {

@@ -1,4 +1,5 @@
 var startCONFIG={ //Initial configuration for browser
+  worker_socket  : false,
   default_login  : 'didi',
   default_pass   : '1234'  
 }
@@ -29,6 +30,7 @@ function jsload() {
   //loadJS('js/loader/mmdparser.js');
   //loadJS('js/loader/TGALoader.js');
   loadJS('js/engine/socketw.js');
+  loadJS('js/engine/socketo.js');
   //loadJS('zip.js');  
   loadJS('js/engine/helper.js');
   loadJS('js/engine/xshader.js');
