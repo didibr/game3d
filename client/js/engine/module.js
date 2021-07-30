@@ -192,6 +192,7 @@ window.ANIMATED = {
       return;
     }
     if (ANIMATED._loaded[fbx]) {
+      
       //Clone existent same Model/Skelleton and Animations, rescale and position to default      
       ANIMATED._loaded[fbx].obj.remove(ANIMATED._loaded[fbx].audio);
       var object = SkeletonUtils.clone(ANIMATED._loaded[fbx].obj);

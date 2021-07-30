@@ -208,6 +208,8 @@ var ENGINE = {
 
   clear: function () {
     $('#playdiv').hide();
+    ENGINE.GAME._fullloaded= false;
+    ENGINE.GAME._completeloaded= false;
     HELPER.hideTransform();
     ENGINE.EDITORM._tiles = null;
     ENGINE.EDITORM._tileselected = null;
@@ -218,6 +220,7 @@ var ENGINE = {
     ENGINE.Physic.debugPhysics = false;
     ENGINE.Light.lights = [];
     ANIMATED.clear();
+    HELPER.stopAudios();
     for (var i = 0; i < ENGINE.itemCache.length; i++)
       if (ENGINE.itemCache[i].parent) ENGINE.itemCache[i].parent.remove(ENGINE.itemCache[i]);
 

@@ -69,7 +69,7 @@ module.exports = {
     //console.log(message.DATA);
     //####### TOTO ANTHACK FUNCTIONS DUE TO MOVIMENTATION #######
     //newpos = new AI.THREE.Vector3(newpos.x, newpos.y, newpos.z);
-    
+
     this.broadCastData(message.ID, {
       MOVETO: {
         login: AI.con[message.ID].userdata.login,
@@ -81,19 +81,22 @@ module.exports = {
   _ONUPDATEPLAYER: function (message) {
     if (this.checkHeader(message) == false) return;
     if (this.checkPlayer(message) == false) return;
-    if (typeof (message.DATA.pos) == 'undefined' || typeof (message.DATA.qua)=='undefined') return;
+    if (typeof (message.DATA.pos) == 'undefined' || typeof (message.DATA.qua) == 'undefined') return;
 
     //save position on buffer  
     AI.con[message.ID].userdata.pos = message.DATA.pos;
     AI.con[message.ID].userdata.qua = message.DATA.qua;
 
-    var moves = typeof (message.DATA.moves) == 'undefined' ? null :  message.DATA.moves;
+    var moves = typeof (message.DATA.moves) == 'undefined' ? null : message.DATA.moves;
 
-    this.broadCastData(message.ID, { UPDATEPLAYER: { 
-      login: this.con[message.ID].userdata.login,
-      pos:message.DATA.pos, 
-      qua:message.DATA.qua, 
-      moves: moves }});
+    this.broadCastData(message.ID, {
+      UPDATEPLAYER: {
+        login: this.con[message.ID].userdata.login,
+        pos: message.DATA.pos,
+        qua: message.DATA.qua,
+        moves: moves
+      }
+    });
   },
 
   _ONNEWLOGIN: function (message) {
@@ -256,8 +259,8 @@ module.exports = {
   },
 
   sendData: function (id, data) {
-    if(this.con[id].CONNECTION)
-    this.con[id].CONNECTION.sendUTF(JSON.stringify(data));
+    if (this.con[id].CONNECTION)
+      this.con[id].CONNECTION.sendUTF(JSON.stringify(data));
   },
 
   /*broadCastData: function (channel, data) {
@@ -316,8 +319,49 @@ module.exports = {
     this.HELPER.writeFile(this.entitysDir + entityname, jstring);
   },
 
+  updateMapUser: function (map) {
+    if (AI._actorUpdateTime[map].tick > 40) {
+      AI._actorUpdateTime[map].tick = 1;
+    }
+  },
 
-  //####### GAME SERVER PART
+  updateActorsByMap: function () {
+    var maps = {};//players on this maps
+    Object.keys(AI.con).forEach((key) => {
+      if (AI.con[key] && AI.con[key].userdata && AI.con[key].userdata.map && AI.con[key].userdata.map != null) {
+        var map = AI.con[key].userdata.map;
+        if (!maps[map]) {
+          maps[map] = 1;
+          if (!AI._actorUpdateTime[map]) {
+            AI._actorUpdateTime[map] = { tick: 1 };
+          } else {
+            //AI._actorUpdateTime[map].tick += 1;
+          }
+        }
+      }
+    });
+
+    //this.updateMapUser(key1);
+    Object.keys(AI._actorUpdateTime).forEach((key1) => { //searc on update list for maps not active
+      var found = false;
+      Object.keys(maps).forEach((key2) => { //Active Maps
+        if (key1 == key2) {
+          found = true;
+        }
+      });
+      AI._actorUpdateTime[key1].tick += 1;//increase tick for active or not
+      if (found == true) {//map is active
+        if (AI._actorUpdateTime[key1].tick > 40)
+          this.updateMapUser(key1);
+      } else {//map is inactive
+        if (AI._actorUpdateTime[key1].tick > 60)
+          delete AI._actorUpdateTime[key1];
+      }
+    });
+  },
+
+  //####### GAME SERVER PART  
+  _actorUpdateTime: {},
   _timer: null,
   _ping: 0,
   update: function () {
@@ -326,8 +370,10 @@ module.exports = {
     //if(typeof(THREE)=='undefined' && typeof(AI)!=='undefined' &&){      
     //  THREE=require();
     // }
+    AI.updateActorsByMap();
     AI._ping += 1;
     if (AI._ping > AI.pingTIME) {
+      console.log(AI._actorUpdateTime);
       AI._ping = 0;
       AI.pingPLayers();
     }

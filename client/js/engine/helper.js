@@ -360,13 +360,21 @@ var HELPER = {
     return fakeata;
   },
 
+  _audioExists:[],
+  stopAudios:function(){
+    this._audioExists.forEach((audio)=>{
+      if(audio.isPlaying==true)audio.stop();
+    });
+  },
+
   _audioBuffer: new Array(),
   audioAtatch: async function (audio, obj, callback) {
     var audioFile = ENGINE.url + 'AUDIOLOAD' + audio; //composer audio   
     if (this._audioBuffer[audioFile]) { //get from buffer preloaded
       console.log('buffer audio');
       var buffered = this._audioBuffer[audioFile];
-      const audio = new THREE.PositionalAudio(LISTENER());
+      const audio = new THREE.PositionalAudio(await LISTENER());
+      this._audioExists.push(audio);
       audio.setBuffer(buffered.buffer);
       audio.loop = buffered.loop;
       audio.setVolume(buffered.volume);
@@ -384,6 +392,7 @@ var HELPER = {
       console.log('load audio');
       LOADER.audioLoader.load(soundFile, async function (buffer) {
         const audio = new THREE.PositionalAudio(await LISTENER());
+        HELPER._audioExists.push(audio);
         audio.setBuffer(buffer);
         audio.loop = loop;
         audio.setVolume(volume);

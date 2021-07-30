@@ -1,4 +1,5 @@
-{"pass":"1234","map":"teste1","entity":"player","save":{},
+{"pass":"1234","map":"testlight","entity":"player","save":{},
 "itens":[{"name":"sword","type":2}],
+"pos":{"x":10,"y":2,"z":10},
 "drops":[{"name":"key01"}]
 }

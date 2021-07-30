@@ -131,19 +131,19 @@ ENGINE.EDITORM = {
   },
 
 
-  
-  _reviveSounds: function () {    
+
+  _reviveSounds: function () {
     for (var i = 0; i < ENGINE.EDITORM._sounds.length; i++) {
-      var sndarr=ENGINE.EDITORM._sounds[i];
-      if (typeof (sndarr.audio) !== _UN && typeof(sndarr.tile)!==_UN) {
+      var sndarr = ENGINE.EDITORM._sounds[i];
+      if (typeof (sndarr.audio) !== _UN && typeof (sndarr.tile) !== _UN) {
         var tileName = sndarr.tile;
         var pos = sndarr.audio.pos;
         tileName = tileName.split('x');
         var tile = ENGINE.TILE.getTileByXY(tileName[0], tileName[1]);
         var actPos = tile.position.clone().add(new THREE.Vector3(pos.x, pos.y, pos.z));
-        ENGINE.EDITORM.addasphereSound(sndarr.audio.name);               
-        if(sndarr.audio.obj!=null)
-        sndarr.audio.obj.position.copy(actPos);
+        ENGINE.EDITORM.addasphereSound(sndarr.audio.name);
+        if (sndarr.audio.obj != null)
+          sndarr.audio.obj.position.copy(actPos);
       }
     }
     ENGINE.EDITORM._updateSoundList();
@@ -329,28 +329,34 @@ ENGINE.EDITORM = {
     var sndsarray = [];
     for (var i = 0; i < ENGINE.EDITORM._sounds.length; i++) {
       if (typeof (ENGINE.EDITORM._sounds[i]) !== 'undefined') {
-        var activeobj=ENGINE.EDITORM._sounds[i].audio;
-        var tilepos= activeobj.pos;        
-            tilepos=new THREE.Vector3(tilepos.x,tilepos.y,tilepos.z);
+        var activeobj = ENGINE.EDITORM._sounds[i].audio;
+        var tilename = ENGINE.EDITORM._sounds[i].tile;
+        var tilearr = tilename.split('x');
+        var tilepos = ENGINE.TILE.getTileByXY(tilearr[0], tilearr[1]).position;
+        tilepos = new THREE.Vector3(tilepos.x, tilepos.y, tilepos.z);
         var realpos = null;
-        if(activeobj.obj && activeobj.obj!=null){
-          realpos=activeobj.obj.position.clone().sub(tilepos);
-        }else{
-          realpos=new THREE.Vector3(activeobj.pos.x,activeobj.pos.y,activeobj.pos.z);
-        }        
-        var audio= {             
-            name: activeobj.name, 
-            audio: activeobj.audio, 
-            volume: activeobj.volume, 
-            key: activeobj.key, 
-            type: activeobj.sntype, 
-            pos: {x:realpos.x,y:realpos.y,z:realpos.z} }
-        sndsarray.push({tile:ENGINE.EDITORM._sounds[i].tile,audio:audio});
+        if (activeobj.obj && activeobj.obj != null) {
+          console.log(activeobj.obj.position.clone());
+          console.log(tilepos);
+          realpos = activeobj.obj.position.clone().sub(tilepos);
+        } else {
+          realpos = new THREE.Vector3(activeobj.pos.x, activeobj.pos.y, activeobj.pos.z);
+        }
+        var audio = {
+          name: activeobj.name,
+          audio: activeobj.audio,
+          volume: activeobj.volume,
+          key: activeobj.key,
+          type: activeobj.type,
+          pos: { x: realpos.x, y: realpos.y, z: realpos.z },
+          tile: tilename
+        }
+        sndsarray.push({ tile: ENGINE.EDITORM._sounds[i].tile, audio: audio });
       }
     }
     return sndsarray;
   },
-  
+
 
 
   _create: function () {
@@ -478,7 +484,7 @@ ENGINE.EDITORM = {
           light: jsonligth,
           actor: jsonactor,
           audio: jsonaudio,
-          sky: {bg:"pano0.jpg"},
+          sky: { bg: "pano0.jpg" },
           script: $('#mscript').val()
         }
       });
@@ -696,7 +702,7 @@ ENGINE.EDITORM = {
         ENGINE.EDITORM._sounds = sounds;
         ENGINE.EDITORM._reviveSounds();
       }
-      
+
 
 
       //script
@@ -711,7 +717,11 @@ ENGINE.EDITORM = {
         ENGINE.EDITORM._loadComplete();
       }
 
-      setTimeout(function () { HELPER.hideTransform(); }, 1000);
+      setTimeout(async function () {
+        var listener = await LISTENER();
+        if (listener.setMasterVolume) listener.setMasterVolume(1);
+        HELPER.hideTransform();
+      }, 1000);
     });
   },
 
@@ -1471,7 +1481,7 @@ ENGINE.EDITORM = {
   },
 
 
-  _folowSound:function(){
+  _folowSound: function () {
     var sndindex = $('#sndactors option:selected').val();
     if (typeof (sndindex) == 'undefined') return;
     sndindex = parseInt(sndindex);
@@ -1480,58 +1490,58 @@ ENGINE.EDITORM = {
     HELPER.blinkActor(ENGINE.EDITORM._sounds[sndindex].audio.obj);
   },
 
-  playSelected:function(){
+  playSelected: function () {
     var sndindex = $('#sndactors option:selected').val();
     if (typeof (sndindex) == 'undefined') return;
     sndindex = parseInt(sndindex);
-    ENGINE.EDITORM._sounds[sndindex].audio.live.play();    
+    ENGINE.EDITORM._sounds[sndindex].audio.live.play();
   },
 
-  stopSelected:function(){
+  stopSelected: function () {
     var sndindex = $('#sndactors option:selected').val();
     if (typeof (sndindex) == 'undefined') return;
     sndindex = parseInt(sndindex);
     ENGINE.EDITORM._sounds[sndindex].audio.live.stop();
   },
 
-  _soundBlink:function(){
+  _soundBlink: function () {
     var sndindex = $('#sndactors option:selected').val();
     if (typeof (sndindex) == 'undefined') return;
     sndindex = parseInt(sndindex);
-    if(ENGINE.EDITORM._sounds[sndindex].audio.obj && 
-      ENGINE.EDITORM._sounds[sndindex].audio.obj!=null){
-        HELPER.blinkActor(ENGINE.EDITORM._sounds[sndindex].audio.obj);
-    HELPER.showTransform(ENGINE.EDITORM._sounds[sndindex].audio.obj);
-    HELPER._transformHelper({ value: 'translate' });
-      }
-    
+    if (ENGINE.EDITORM._sounds[sndindex].audio.obj &&
+      ENGINE.EDITORM._sounds[sndindex].audio.obj != null) {
+      HELPER.blinkActor(ENGINE.EDITORM._sounds[sndindex].audio.obj);
+      HELPER.showTransform(ENGINE.EDITORM._sounds[sndindex].audio.obj);
+      HELPER._transformHelper({ value: 'translate' });
+    }
+
   },
 
 
-  addasphereSound:function(name) {
+  addasphereSound: function (name) {
     for (var i = 0; i < ENGINE.EDITORM._sounds.length; i++) {
       var selsound = ENGINE.EDITORM._sounds[i];
       if (selsound.audio.name == name) {
         var actPos = selsound.audio.pos;
         actPos = new THREE.Vector3(actPos.x, actPos.y + 0.5, actPos.z);
         var spphere = null;
-        if(selsound.audio.type==0){
-          spphere=HELPER.areaSphere(actPos, 1, 'gold', false, 5);
-        }        
+        if (selsound.audio.type == 0) {
+          spphere = HELPER.areaSphere(actPos, 1, 'gold', false, 5);
+        }
         selsound.audio.obj = spphere;
-        HELPER.audioAtatch(selsound.audio.audio,spphere,(getaudio)=>{
-            getaudio.audio.setVolume(selsound.audio.volume);
-            selsound.audio.live=getaudio.audio;
-            if(selsound.audio.type==1){
-              ENGINE.camera.add(selsound.audio.live);
-            }
-          })
+        HELPER.audioAtatch(selsound.audio.audio, spphere, (getaudio) => {
+          getaudio.audio.setVolume(selsound.audio.volume);
+          selsound.audio.live = getaudio.audio;
+          if (selsound.audio.type == 1) {
+            ENGINE.camera.add(selsound.audio.live);
+          }
+        })
         break;
       }
     }
   },
 
-  _insertSound: function (button,replace) {
+  _insertSound: function (button, replace) {
     function checkId() {
       var ccid = $('#sndname').val().trim();
       if (ccid == '' || ccid.length < 4) {
@@ -1542,27 +1552,27 @@ ENGINE.EDITORM = {
           ENGINE.EDITORM._sounds[i].audio.name == ccid) {
           //alert('Name already Exists: ' + ccid); return null;
           console.log(replace);
-          if(replace==false){
+          if (replace == false) {
             $("#dialog2").dialog('close');
             return null;
           }
-          if(replace==true){
+          if (replace == true) {
             //ENGINE.EDITORM._sounds[i].audio.live.parent().remove(ENGINE.EDITORM._sounds[i].audio.live);
-            if(ENGINE.EDITORM._sounds[i].audio.live.isPlaying==true)
-            ENGINE.EDITORM._sounds[i].audio.live.stop();
-            if(ENGINE.EDITORM._sounds[i].audio.obj!=null){
-              ENGINE.EDITORM._sounds[i].audio.obj.selfremove=true;
-            }else{
+            if (ENGINE.EDITORM._sounds[i].audio.live.isPlaying == true)
+              ENGINE.EDITORM._sounds[i].audio.live.stop();
+            if (ENGINE.EDITORM._sounds[i].audio.obj != null) {
+              ENGINE.EDITORM._sounds[i].audio.obj.selfremove = true;
+            } else {
               ENGINE.camera.remove(ENGINE.EDITORM._sounds[i].audio.live);
-            }            
+            }
             HELPER.hideTransform();
-            ENGINE.EDITORM._sounds.splice(i,1);
+            ENGINE.EDITORM._sounds.splice(i, 1);
             $("#dialog2").dialog('close');
             return ccid;
           }
           $("#dialog2").html(`
           <div align="center"><br>
-          Name `+ccid+` already in list <br><br>
+          Name `+ ccid + ` already in list <br><br>
           <input type="button" value="Replace" onclick="ENGINE.EDITORM._insertSound(this,true)"/> 
           <input type="button" value="Cancel" onclick="ENGINE.EDITORM._insertSound(this,false)"/> 
           </div>
@@ -1586,27 +1596,27 @@ ENGINE.EDITORM = {
     var sntype = $('#sndtype option:selected').val();
     sntype = parseInt(sntype);
     var position = null;
-    if(sntype==1){
-      position=new THREE.Vector3();
-    }else{
-      position=ENGINE.EDITORM._tileselected.position.clone();
-    }    
+    if (sntype == 1) {
+      position = new THREE.Vector3();
+    } else {
+      position = ENGINE.EDITORM._tileselected.position.clone();
+    }
     position = { x: position.x, y: position.y, z: position.z };
     var key = $('#sndkey').val().trim();
     var volume = $('#sndvol').val().trim();
     if (isNaN(volume) == true) {
       alert('Invalid volume value');
       return;
-    }    
+    }
     volume = parseFloat(volume);
     ENGINE.EDITORM._sounds.push({
       audio:
         { name: name, audio: audio, volume: volume, key: key, type: sntype, pos: position },
-      tile:ENGINE.EDITORM._tileselected.group.square
+      tile: ENGINE.EDITORM._tileselected.group.square
     });
     ENGINE.EDITORM._updateSoundList();
     //if (sntype == 0) {//sphere point sound
-      ENGINE.EDITORM.addasphereSound(name);
+    ENGINE.EDITORM.addasphereSound(name);
     //}
   },
 
@@ -1619,8 +1629,25 @@ ENGINE.EDITORM = {
       soundlist += '<option value="' + i + '">' + soundsel.name + ' ' + sndtype + ' ' + soundsel.audio + '</option>';
     }
     $('#sndactors').html(soundlist);
-
   },
+
+  _removeSound: function (button) {
+    var sndindex = $('#sndactors option:selected').val();
+    if (typeof (sndindex) == 'undefined') return;
+    sndindex = parseInt(sndindex);
+    if (ENGINE.EDITORM._sounds[sndindex].audio.live) {
+      if (ENGINE.EDITORM._sounds[sndindex].audio.live.isPlaying == true)
+        ENGINE.EDITORM._sounds[sndindex].audio.live.stop();
+      ENGINE.EDITORM._sounds[sndindex].audio.live.parent.remove(ENGINE.EDITORM._sounds[sndindex].audio.live);
+    }
+    if (ENGINE.EDITORM._sounds[sndindex].audio.obj &&
+      ENGINE.EDITORM._sounds[sndindex].audio.obj != null) {
+      HELPER.hideTransform();
+      ENGINE.EDITORM._sounds[sndindex].audio.obj.selfremove = true;
+    }
+    ENGINE.EDITORM._sounds.splice(sndindex,1);
+    this._updateSoundList();
+  }
 
 
 

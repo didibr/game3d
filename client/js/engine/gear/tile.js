@@ -94,6 +94,7 @@ ENGINE.TILE = {
     var shape = new Ammo.btBoxShape(ammosize);    
     shape.setMargin(0.5);
     ENGINE.Physic.createRigidBody(tile, shape, 0, pos, quat);
+    
     tile.castShadow = false;
     tile.receiveShadow = true;
     //texture.wrapS = THREE.RepeatWrapping;
