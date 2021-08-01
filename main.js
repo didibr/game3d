@@ -13,7 +13,7 @@ const sharp = require('sharp');
 //ADMIN LOGIN TO EDITING CREATING
 const ADMIN = 'didi';
 const PASS = '1234';
-const WebPort= 8080;
+const WebPort = 8080;
 
 const dir = {
   audio: 'audio/',
@@ -22,7 +22,7 @@ const dir = {
   texturesThub: 'textures/thumbnail/',
   textures: 'textures/extra/',
   upload: 'upload/',
-  dummy:'dummy'
+  dummy: 'dummy'
 }
 AI.audiosDir = HTTP.ServerDIR + '/data/audio/';
 AI.tilesDir = HTTP.ServerDIR + '/data/tiles/';
@@ -30,7 +30,7 @@ AI.mapsDir = HTTP.ServerDIR + '/data/maps/';
 AI.itemsDir = HTTP.ServerDIR + '/data/items/';
 AI.entitysDir = HTTP.ServerDIR + '/data/entitys/';
 AI.playerCFG = HTTP.ServerDIR + '/data/players/';
-AI.THREE=require(HTTP.ClientDIR +'/js/build/three.min');
+AI.THREE = require(HTTP.ClientDIR + '/js/build/three.min');
 
 
 async function CreateTumb(temp, local, file) {
@@ -80,20 +80,20 @@ async function MapChangeSta(data) {
   }
   if (typeof (data.name) == "undefined") return;
   if (typeof (data.elements) == "undefined") return;
-  var mapname = data.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");  
+  var mapname = data.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   var comandarray = data.elements;
 
-  if(comandarray.CMD=='MapOnOff'){    
-      if(mapname=='default')return;
-      HELPER.readFile(HTTP.ServerDIR+'/aconf', function (data) {
-        data = JSON.parse(data);
-        data.maps[mapname]=comandarray.VAL;        
-        //console.log(data);
-        HELPER.writeFile(HTTP.ServerDIR+'/aconf',JSON.stringify(data));
-      });
+  if (comandarray.CMD == 'MapOnOff') {
+    if (mapname == 'default') return;
+    HELPER.readFile(HTTP.ServerDIR + '/aconf', function (data) {
+      data = JSON.parse(data);
+      data.maps[mapname] = comandarray.VAL;
+      //console.log(data);
+      HELPER.writeFile(HTTP.ServerDIR + '/aconf', JSON.stringify(data));
+    });
   }
-  if(comandarray.CMD=='AIActivate'){
-    AI.control('ACTIVATE',comandarray.VAL);
+  if (comandarray.CMD == 'AIActivate') {
+    AI.control('ACTIVATE', comandarray.VAL);
   }
 
 }
@@ -189,6 +189,11 @@ async function LoadMapJson(res, name) {
     HTTP.WaiToCLOSE(false);
   });
 }
+async function LoadLiveMapJson(res, name) {
+  HTTP.WaiToCLOSE(true);
+  AI._LoadLiveMap(HTTP,res, name, AI);  
+}
+
 
 async function LoadEntityJson(res, name) {
   HTTP.WaiToCLOSE(true);
@@ -245,7 +250,7 @@ async function GetFbxNames(res) {
 
 
 async function GetAudios(res) {
-  HTTP.WaiToCLOSE(true);  
+  HTTP.WaiToCLOSE(true);
   var local = '/' + dir.audio;
   HELPER.listFiles(HTTP.ClientDIR + local, function (files) {
     var ordened = [];
@@ -254,17 +259,17 @@ async function GetAudios(res) {
       ordened.push(file);
     });
     ordened.sort();
-    var autoid=0;
+    var autoid = 0;
     ordened.forEach(file => {
       /*html += '<img src=".' + local + file + '" title="' + file +
         '" data-file="' + file + '" path="textures/extra/"' +
         'onClick="ENGINE.EDITORT._textureSel(this);">';
         */
-        html += 
-        '<audio id="'+autoid+'A" preload="auto">'+
-        '<source  src=".' + local + file + '" data-file="' + file + '"></audio>'+
-        '<i id="'+autoid+'I">'+file+'</i><input type="checkbox" id="'+autoid+'C">';
-        autoid+=1;
+      html +=
+        '<audio id="' + autoid + 'A" preload="auto">' +
+        '<source  src=".' + local + file + '" data-file="' + file + '"></audio>' +
+        '<i id="' + autoid + 'I">' + file + '</i><input type="checkbox" id="' + autoid + 'C">';
+      autoid += 1;
     });
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(html);
@@ -446,9 +451,9 @@ function OnHttpRequest(req, res) {
   if (HELPER.reqStart(req, '/GETTEXTURES') == true) {
     GetTextures(res);
     return;
-  }  
+  }
   if (HELPER.reqStart(req, '/AUDIOLIST') == true) {
-    GetAudios(res);    
+    GetAudios(res);
     return;
   }
   if (HELPER.reqStart(req, '/AUDIONAMES') == true) {
@@ -483,6 +488,11 @@ function OnHttpRequest(req, res) {
     LoadMapJson(res, name);
     return;
   }
+  if (HELPER.reqStart(req, '/LIVELOADMAPS') == true) {
+    var name = decodeURI(req.url).replace('/LIVELOADMAPS', '').trim();
+    LoadLiveMapJson(res, name);
+    return;
+  }
   if (HELPER.reqStart(req, '/LAOADENT') == true) {
     var name = decodeURI(req.url).replace('/LAOADENT', '').trim();
     LoadEntityJson(res, name);
@@ -500,12 +510,12 @@ function OnHttpRequest(req, res) {
   if (HELPER.reqStart(req, '/MAPSTATUS') == true) {
     HTTP.WaiToCLOSE(true);
     var name = decodeURI(req.url).replace('/MAPSTATUS', '').trim();
-    HELPER.readFile(HTTP.ServerDIR+'/aconf', function (data) {
+    HELPER.readFile(HTTP.ServerDIR + '/aconf', function (data) {
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      var datmap=JSON.parse(data);
-      if(datmap.maps[name]){
+      var datmap = JSON.parse(data);
+      if (datmap.maps[name]) {
         res.end(JSON.stringify({ resp: true }));
-      }else{
+      } else {
         res.end(JSON.stringify({ resp: false }));
       }
       HTTP.WaiToCLOSE(false);
@@ -580,7 +590,7 @@ SOCKET.START(HTTPSERVER, OnWebsocketMessage);
 //Create AI game Inteligence and comunication
 AI.HELPER = HELPER;
 AI.SOCKET = SOCKET;
-AI.control('ACTIVATE',true);
+AI.control('ACTIVATE', true);
 
 /*IRC.CONNECT();
 disabled chat reader duo create sockets to send message to page

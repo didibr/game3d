@@ -288,11 +288,17 @@ ENGINE.Physic = {
       var login = objPhys.fakeobj.name;
       var speemov = objPhys.move.speed;
       var playervar = ENGINE.GAME._players[login];
+      if(!playervar)playervar=ENGINE.GAME._npcData[login]
       var playerobj = null;
       var running = false;
 
       if (typeof (playervar) != 'undefined') {
-        if (playervar.speed) speemov += playervar.speed; //passive add extra player speed (buff)
+        if (playervar.speed){
+          speemov += playervar.speed; //passive add extra player speed (buff)
+        }else{
+          //playervar.speed=ENGINE.GAME._speed.player;
+        }
+        if(!playervar.speedExtra)playervar.speedExtra=0;
         playerobj = ANIMATED._data[login];
         if (speemov > ENGINE.GAME._speed.player) running = true; //anny speed over base is running
       }
@@ -318,8 +324,8 @@ ENGINE.Physic = {
         //objPhys.setLinearFactor(new  Ammo.btVector3(1, 1, 1));      
 
         //##### ANIMATION AREA for walk
-        if(ENGINE.GAME._players[login].speedExtra>0 && distance<2){
-          ENGINE.GAME._players[login].speedExtra=0;
+        if(playervar.speedExtra>0 && distance<2){
+          playervar.speedExtra=0;
           running=false;
         }
 
@@ -352,12 +358,12 @@ ENGINE.Physic = {
         rotationA.setValue(objPhys.fakeobj.quaternion.x, objPhys.fakeobj.quaternion.y, objPhys.fakeobj.quaternion.z, objPhys.fakeobj.quaternion.w);
         world.setRotation(rotationA);
 
-        if(ENGINE.GAME._players[login]){
-          ENGINE.GAME._players[login].pos=objPhys.fakeobj.position.clone();
-          ENGINE.GAME._players[login].qua=objPhys.fakeobj.quaternion.clone();
-          if(!ENGINE.GAME._players[login].angle || !ENGINE.GAME._players[login].angle.isVector3)
-          ENGINE.GAME._players[login].angle=new THREE.Vector3();
-          objThree.getWorldDirection(ENGINE.GAME._players[login].angle);            
+        if(playervar){
+          playervar.pos=objPhys.fakeobj.position.clone();
+          playervar.qua=objPhys.fakeobj.quaternion.clone();
+          if(!playervar.angle || !playervar.angle.isVector3)
+          playervar.angle=new THREE.Vector3();
+          objThree.getWorldDirection(playervar.angle);            
         }
         //ms.setWorldTransform(world);
       }
@@ -395,7 +401,7 @@ ENGINE.Physic = {
     object.move.direction = new THREE.Vector3().subVectors(p, from).normalize();
   },
 
-  bodyUpdate: function (object, nposition, nrotation) {
+  bodyUpdate: async function (object, nposition, nrotation) {
     if (object.isObject3D && object.userData.physicsBody) {
       object = object.userData.physicsBody;
     } else {

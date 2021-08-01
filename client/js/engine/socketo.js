@@ -6,6 +6,7 @@ WSOmessage=function(messag){
 }
 
 WSOsend=function(key,message){
+  //console.log(key,message);
     WSold.socket.send(JSON.stringify({ KEY: key, DATA: message }));
 }
 

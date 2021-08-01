@@ -4,6 +4,7 @@
 const fs = require('fs');
 
 var AI;
+var _UN = 'undefined';
 
 module.exports = {
   INITIAL: { MAP: 'teste1', ENTITY: 'player', SAVE: {} }, //INITIAL CONF FOR NEW USERS
@@ -66,6 +67,21 @@ module.exports = {
     if (typeof (message.DATA.destin) == 'undefined') return;
     if (typeof (message.DATA.userdata) == 'undefined') return;
 
+    //update npc positions for all map
+    var map = message.DATA.userdata.map;
+    if (message.DATA.npcs && AI._activeMaps[map]) {
+      for (var i = 0; i < Object.keys(message.DATA.npcs).length; i++) {
+        var npcname = Object.keys(message.DATA.npcs)[i];
+        if (!AI._activeMaps[map].npcs) AI._activeMaps[map].npcs = {};
+        AI._activeMaps[map].npcs[npcname] = message.DATA.npcs[npcname];
+        if (AI._activeMaps[map].npcData && AI._activeMaps[map].npcData[npcname]) {
+          if (message.DATA.npcs[npcname].pos) AI._activeMaps[map].npcData[npcname].pos = message.DATA.npcs[npcname].pos;
+          if (message.DATA.npcs[npcname].qua) AI._activeMaps[map].npcData[npcname].qua = message.DATA.npcs[npcname].qua;
+        }
+
+      }
+    } else message.DATA.npcs = {};
+
     //console.log(message.DATA);
     //####### TOTO ANTHACK FUNCTIONS DUE TO MOVIMENTATION #######
     //newpos = new AI.THREE.Vector3(newpos.x, newpos.y, newpos.z);
@@ -73,7 +89,8 @@ module.exports = {
     this.broadCastData(message.ID, {
       MOVETO: {
         login: AI.con[message.ID].userdata.login,
-        destin: message.DATA.destin
+        destin: message.DATA.destin,
+        npcs: message.DATA.npcs
       }
     })
   },
@@ -106,6 +123,7 @@ module.exports = {
       message.DATA.login == null ||
       message.DATA.login.replace(/[^a-z0-9]/gi, '') !== message.DATA.login ||
       message.DATA.login.length < minchars) {
+      console.log(message.DATA.login);
       this.sendData(message.ID, {
         NEWLOGININVALID: {
           id: 'xlogin', msg: 'Invalid Login\nleast ' +
@@ -189,8 +207,10 @@ module.exports = {
             AI.con[message.ID].userdata = jdata;
             AI.con[message.ID].userdata.login = message.DATA.login;
           }
+          var map = AI.con[message.ID].userdata.map;
           AI.broadCastData(message.ID, { VALIDLOGIN: AI.con[message.ID].userdata }); //broadcast all for this user
-          AI.sendOnlinePLayers(message.ID); //send online players to this new one
+          AI.sendOnlinePLayers(message.ID); //send online players to this new one          
+          //AI._startAi(map);//have atleast one player to start AI (replaced by loadlive)
         }
       });
 
@@ -229,7 +249,10 @@ module.exports = {
         //val.CONNECTION.sendUTF(JSON.stringify(data));
       }
     });
-    AI.sendData(ID, { ONLINEPLAYERS: arrayplayers });
+    var arraynpcs = {};//AI._activeMaps[map].npcData
+    if (AI._activeMaps[map] && AI._activeMaps[map].npcData) arraynpcs = AI._activeMaps[map].npcData;
+
+    AI.sendData(ID, { ONLINEPLAYERS: { players: arrayplayers, npcs: arraynpcs } });
   },
 
   checkHeader: function (message) {
@@ -319,49 +342,208 @@ module.exports = {
     this.HELPER.writeFile(this.entitysDir + entityname, jstring);
   },
 
-  updateMapUser: function (map) {
-    if (AI._actorUpdateTime[map].tick > 40) {
-      AI._actorUpdateTime[map].tick = 1;
+
+  _LoadLiveMap: function (HTTP,res,map, ai) { //get live version of saved map    
+    if (!AI) { AI = ai; }
+    if (!AI._activeMaps[map]) {
+      AI._activeMaps[map] = { tick: 1 };
+    }
+    fs.readFile(AI.mapsDir + map, function read(err, data) {
+      if (err) { console.log('_LoadLiveMap error for map' + map, err); return; }
+      data = JSON.parse(data);
+      var tiles = data.tiles;
+      var cells = tiles.length;
+      var rows = tiles[0].length;
+      if (!AI._activeMaps[map].npcData || AI._activeMaps[map].npcData == null) { //generate npc live data
+        AI._activeMaps[map].npcData = {};
+        //Tiled info
+        for (var x = 0; x < cells; x++) {
+          for (var y = 0; y < rows; y++) {
+            var tiledata = tiles[x][y];
+            if (typeof (tiledata) !== _UN)
+              for (var v = 0; v < tiledata.length; v++) {
+                var scenedata = tiledata[v];
+                if (typeof (scenedata.entity) !== _UN) { //ADD NEW NPC 
+                  //get data to next actions
+                  var realpos = {
+                    x: ((10 * x) - 0.5)-10,
+                    y: scenedata.entity.box.pos.y,
+                    z: ((10 * y) - 0.5)
+                  }
+                  if (!AI._activeMaps[map].npcData[scenedata.name])
+                    AI._activeMaps[map].npcData[scenedata.name] = {
+                      attr: scenedata.entity.attr, //npc atributes
+                      drops: scenedata.entity.drop,  //npc drop chance
+                      pos: realpos, //variant position
+                      qua: scenedata.entity.box.qua,
+                      startpos: realpos, //center of area chase
+                      startsqua: scenedata.entity.box.qua,
+                    }
+                }
+              }
+          }
+        }
+      } else {//get live data
+        for (var x = 0; x < cells; x++) {
+          for (var y = 0; y < rows; y++) {
+            var tiledata = tiles[x][y];
+            if (typeof (tiledata) !== _UN)
+              for (var v = 0; v < tiledata.length; v++) {
+                var scenedata = tiledata[v];
+                if (typeof (scenedata.entity) !== _UN) { //ADD NEW NPC 
+                  //get data to next actions
+                  if (AI._activeMaps[map].npcData[scenedata.name]) {
+                    var moved = AI._activeMaps[map].npcData[scenedata.name];
+                    scenedata.entity.box.pos.x = moved.pos.x - (10 * x) - 0.5;
+                    scenedata.entity.box.pos.z = moved.pos.z - (10 * y) - 0.5;
+                    scenedata.entity.box.qua = moved.qua;
+                  }
+                }
+              }
+          }
+        }
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(data));
+      HTTP.WaiToCLOSE(false);      
+    });
+  },
+
+
+  updateMapUser: function (map,ontick) { //update data to users on this map
+    function newWalk(position, center, notrepass) {
+      //position=new THREE.Vector3(position.x,position.y,position.z);
+      center = new AI.THREE.Vector3(center.x, center.y, center.z);
+      //console.log('center at',center);
+      var randompos = new AI.THREE.Vector3(
+        center.x + (notrepass * (2 * Math.random() - 1)),
+        center.y,
+        center.z + (notrepass * (2 * Math.random() - 1)));
+      var distance = randompos.distanceTo(center);
+      if (distance == 0 || distance > notrepass || distance < notrepass*0.2) {
+        //console.log('recalculate');
+        return newWalk(position, center, notrepass);
+      } else {
+        return randompos;
+      }
+    }
+    //prevous functions
+    if (AI._activeMaps[map].tick > ontick) { AI._activeMaps[map].tick = 1; } //reset tick prevent remove
+    if (!AI._activeMaps[map].npcData) return;
+    for (var i = 0; i < Object.keys(AI._activeMaps[map].npcData).length; i++) {
+      var npcname = Object.keys(AI._activeMaps[map].npcData)[i];
+      var activenpc = AI._activeMaps[map].npcData[npcname];
+      var atributes = activenpc.attr;
+      var averangetime = 4;
+      if (!AI._activeMaps[map].npcData[npcname].rndTime)
+        AI._activeMaps[map].npcData[npcname].rndTime = Math.round((Math.random() * averangetime));
+      if (AI._activeMaps[map].npcData[npcname].rndTime <= 1) {//time to move        
+        //moves functions
+        //console.log('Working with', npcname, atributes.moviment);
+        if (atributes.moviment == 1) { //0=standing 1=free walking                          
+          console.log('NpcWalk', npcname);
+          var walto = newWalk(activenpc.pos, activenpc.startpos, atributes.areaspaw);
+          activenpc.pos = { x: walto.x, y: walto.y, z: walto.z };
+          AI.broadCastData(map, {
+            NPCMOVE: {
+              login: npcname,
+              destin: activenpc.pos,
+              speed: 1
+            }
+          });
+        }
+        AI._activeMaps[map].npcData[npcname].rndTime = Math.round((Math.random() * averangetime));
+      } else {//not move time
+        var currtick = AI._activeMaps[map].npcData[npcname].rndTime;
+        //console.log('Moving', npcname, ' in ' + currtick);
+        AI._activeMaps[map].npcData[npcname].rndTime = currtick - 1;
+      }
+
     }
   },
 
-  updateActorsByMap: function () {
+
+  /*_startAi: function (map) { //Load all npcs data in map
+    if (!AI._activeMaps[map]) {
+      AI._activeMaps[map] = { tick: 1 };
+    }
+    if (!AI._activeMaps[map].npcData || AI._activeMaps[map].npcData == null) {
+      AI._activeMaps[map].npcData = {};
+      fs.readFile(AI.mapsDir + map, function read(err, data) {
+        if (err) { console.log('_startAi error for map' + map, err); return; }
+        data = JSON.parse(data);
+        var tiles = data.tiles;
+        var cells = tiles.length;
+        var rows = tiles[0].length;
+        //Tiled info
+        for (var x = 0; x < cells; x++) {
+          for (var y = 0; y < rows; y++) {
+            var tiledata = tiles[x][y];
+            if (typeof (tiledata) !== _UN)
+              for (var v = 0; v < tiledata.length; v++) {
+                var scenedata = tiledata[v];
+                if (typeof (scenedata.entity) !== _UN) { //ADD NEW NPC 
+                  //get data to next actions
+                  var realpos={x:(10 * x) - 0.5,
+                               y:scenedata.entity.box.pos.y,
+                               z:(10 * y) - 0.5
+                              }
+                  if (!AI._activeMaps[map].npcData[scenedata.name])
+                    AI._activeMaps[map].npcData[scenedata.name] = {
+                      attr: scenedata.entity.attr, //npc atributes
+                      drops: scenedata.entity.drop,  //npc drop chance
+                      pos: realpos, //variant position
+                      qua: scenedata.entity.box.qua,
+                      startpos: realpos, //center of area chase
+                      startsqua: scenedata.entity.box.qua,
+                    }
+                }
+              }
+          }
+        }
+      });
+    }
+  },*/
+
+  updateActorsByMap: function () { //UPDATE GET ALL MAPS on have onlie PLAYERS
     var maps = {};//players on this maps
     Object.keys(AI.con).forEach((key) => {
       if (AI.con[key] && AI.con[key].userdata && AI.con[key].userdata.map && AI.con[key].userdata.map != null) {
         var map = AI.con[key].userdata.map;
         if (!maps[map]) {
           maps[map] = 1;
-          if (!AI._actorUpdateTime[map]) {
-            AI._actorUpdateTime[map] = { tick: 1 };
+          if (!AI._activeMaps[map]) {
+            AI._activeMaps[map] = { tick: 1 };
           } else {
-            //AI._actorUpdateTime[map].tick += 1;
+            //AI._activeMaps[map].tick += 1;
           }
         }
       }
     });
 
-    //this.updateMapUser(key1);
-    Object.keys(AI._actorUpdateTime).forEach((key1) => { //searc on update list for maps not active
+    //remove not used maps or players offline
+    Object.keys(AI._activeMaps).forEach((key1) => { //searc on update list for maps not active
       var found = false;
       Object.keys(maps).forEach((key2) => { //Active Maps
         if (key1 == key2) {
           found = true;
         }
       });
-      AI._actorUpdateTime[key1].tick += 1;//increase tick for active or not
+      AI._activeMaps[key1].tick += 1;//increase tick for active or not
       if (found == true) {//map is active
-        if (AI._actorUpdateTime[key1].tick > 40)
-          this.updateMapUser(key1);
+        if (AI._activeMaps[key1].tick > 20) //Update Time for this map
+          this.updateMapUser(key1,20);
       } else {//map is inactive
-        if (AI._actorUpdateTime[key1].tick > 60)
-          delete AI._actorUpdateTime[key1];
+        if (AI._activeMaps[key1].tick > 60) //remove no players online on this one
+          delete AI._activeMaps[key1];
       }
     });
   },
 
   //####### GAME SERVER PART  
-  _actorUpdateTime: {},
+  _activeMaps: {}, //npcs=npcs need move update
+  //npcData = anny npcs for ai
+
   _timer: null,
   _ping: 0,
   update: function () {
@@ -373,7 +555,7 @@ module.exports = {
     AI.updateActorsByMap();
     AI._ping += 1;
     if (AI._ping > AI.pingTIME) {
-      console.log(AI._actorUpdateTime);
+      console.log(AI._activeMaps);
       AI._ping = 0;
       AI.pingPLayers();
     }

@@ -2,7 +2,8 @@ window._UN = 'undefined';
 ENGINE.GAME = {
   _delta: 0,
   _me: {}, //my data
-  _players: new Array(),//array same as mydata 
+  _players: new Array(),//array same as mydata    
+  _npcData: new Array(), //npc atributes and actions
   _playerstemp: new Array(),//array same as mydata ( waiting to load on next fulloaded)
   _entitys: new Array(),
   _actors: new Array(), //buff actors preload to revive  
@@ -10,7 +11,7 @@ ENGINE.GAME = {
   _tiles: null,
   _currentmap: null,
   _speed: {
-    player: 2.3, cam: 1, camRotate: 1, clickspeed: 1, updTime: 5, zoomSp: 40,
+    player: 2.3, cam: 1, camRotate: 1, clickspeed: 1, updTime: 2, zoomSp: 40,
             /*system*/ mbLeft: 0, mbRight: 0, wheel: 0
   },
   _spawnposition: new THREE.Vector3(),
@@ -31,8 +32,10 @@ ENGINE.GAME = {
   _updateColidersTimer: 0,            //broadcast time (players state)
 
   _NPCarray: {},
+  _npcs: new Array(),//array only when update occurs
 
   _moveRow: null,
+  _connected: false,
 
   update: function (delta) {
     if (this._completeloaded == false) return;
@@ -46,11 +49,11 @@ ENGINE.GAME = {
   },
 
 
-  renderupdate: function () {
+  renderupdate: function () {//time to update have moves to send 
     if (this._moveRow != null) {
-      this._moveRow.npc = this._NPCarray;
+      this._moveRow.npcs = ENGINE.GAME._NPCarray;
       WSsend('MOVETO', this._moveRow);
-      this._NPCarray = {};
+      ENGINE.GAME._NPCarray = {};
       this._moveRow = null;
     }
     requestAnimationFrame(ENGINE.GAME.renderupdate);
@@ -194,8 +197,8 @@ ENGINE.GAME = {
       if (typeof (moves) == _UN || moves.ACTIVE != true) moves = null;
       var pos = { x: object.position.x, y: object.position.y, z: object.position.z };
       var qua = { x: object.quaternion.x, y: object.quaternion.y, z: object.quaternion.z, w: object.quaternion.w };
-      WSsend('UPDATEPLAYER', { pos: pos, qua: qua, moves: moves, npc: this._NPCarray });
-      this._NPCarray = {};
+      WSsend('UPDATEPLAYER', { active: annime.active, pos: pos, qua: qua, moves: moves });//, npc: this._NPCarray });
+      //this._NPCarray = {};
       ENGINE.GAME._updatePlayersTimer = 0;
     }
   },
@@ -384,55 +387,88 @@ ENGINE.GAME = {
     }
   },
 
-  play: function () {
+  play: async function () {
     $('#playdiv').hide();
     ENGINE.login = $('#DIALOGLOGIN').val();
     ENGINE.pass = $('#DIALOGPASS').val();
-    var socklocal = ENGINE.url.replace('http://', '').replace('https://', '').replace('//', '');
-    if (socklocal.endsWith('/') == true) socklocal = socklocal.substr(0, socklocal.length - 1);
-    var socketws = ENGINE.url.replace('http://', '') == ENGINE.url ? 'wss://' : 'ws://';
-    //console.log(socketws + socklocal);
-    var metod = startCONFIG.worker_socket == true ? 1 : 0;
-    if (metod == 1) { //############### using webworkers
-      console.log('Using WebWorkers');
-      webSocketWorker.port.addEventListener('message', (receive) => {
-        requestAnimationFrame(() => {
-          ENGINE.GAME.messagew(receive);
-        });
-      });
-      WSconnect(socketws + socklocal);
-    }
-    if (metod == 0) {//############### using pure socket
-      //console.log('Using Vanila');
-      WSOmessage = (receive) => {
-        requestAnimationFrame(() => {
-          ENGINE.GAME.messagew(receive);
-        });
-      }
-      WSsend = WSOsend;
-      WSOconnect(socketws + socklocal);
-    }
+    await ENGINE.GAME._connect();
     requestAnimationFrame(ENGINE.GAME.renderupdate);
   },
 
+  _connectMessage: function (receive) {
+    //console.log(receive);
+    requestAnimationFrame(() => {
+      ENGINE.GAME.messagew(receive);
+    });
+  },
+
+  _connect: async function () {
+    var socklocal = ENGINE.url.replace('http://', '').replace('https://', '').replace('//', '');
+    if (socklocal.endsWith('/') == true) socklocal = socklocal.substr(0, socklocal.length - 1);
+    var socketws = ENGINE.url.replace('http://', '') == ENGINE.url ? 'wss://' : 'ws://';
+    var metod = startCONFIG.worker_socket == true ? 1 : 0;
+    if (metod == 1) { //############### using webworkers
+      //console.log('Using WebWorkers');
+      webSocketWorker.port.removeEventListener('message', ENGINE.GAME._connectMessage);
+      webSocketWorker.port.addEventListener('message', ENGINE.GAME._connectMessage);
+      /*webSocketWorker.port.addEventListener('message', (receive) => {
+        requestAnimationFrame(() => {
+          ENGINE.GAME.messagew(receive);
+        });
+      });*/
+      await WSconnect(socketws + socklocal);
+    }
+    if (metod == 0) {//############### using pure socket
+      //console.log('Using Vanila');
+      webSocketWorker.port.removeEventListener('message', ENGINE.GAME._connectMessage);
+      WSOmessage = ENGINE.GAME._connectMessage;
+      /*WSOmessage = (receive) => {
+        requestAnimationFrame(() => {
+          ENGINE.GAME.messagew(receive);
+        });
+      }*/
+      WSsend = WSOsend;
+      await WSOconnect(socketws + socklocal);
+    }
+  },
 
   _getPlayerConfig: function () {
     WSsend('GETPLAYERCONFIG', { login: ENGINE.login, pass: ENGINE.pass });
   },
 
-  _newLogin: function (action) {
+  _newLogin: function (action) { //form create login
+    console.log(action);
     if (action == false) {
       this.message({ INVALIDLOGIN: 'XX' })
     } else {
-      //SOCKET.recon(function () {
+      ENGINE.GAME._connected = false;
+      ENGINE.GAME._connect();
       ENGINE.login = $('#xlogin').val();
-      WSsend('NEWLOGIN', {
-        login: $('#xlogin').val(),
-        pass1: $('#xpass1').val(),
-        pass2: $('#xpass2').val(),
-        mail: $('#axmail').val(),
-        bdate: $('#xdate').val()
-      });
+      if ($('#xlogin').val() != _UN)
+        var nlogin = {
+          login: $('#xlogin').val(),
+          pass1: $('#xpass1').val(),
+          pass2: $('#xpass2').val(),
+          mail: $('#axmail').val(),
+          bdate: $('#xdate').val()
+        };
+      setTimeout(() => {
+        if (ENGINE.GAME._connected == true) {
+          ENGINE.DIALOG.reset();
+          ENGINE.DIALOG.load('createlogin.html', function (dialog) {
+            ENGINE.DIALOG.popup(dialog, 'New Login', true);
+            $('#xlogin').val(nlogin.login);
+            $('#xpass1').val(nlogin.pass1);
+            $('#xpass2').val(nlogin.pass2);
+            $('#axmail').val(nlogin.mail);
+            $('#xdate').val(nlogin.bdate);
+          });
+          WSsend('NEWLOGIN', nlogin);
+        } else {
+          ENGINE.GAME._newLogin(true);
+        }
+      }, 500);
+      //ENGINE.login = $('#xlogin').val();      
       // });
     }
   },
@@ -460,7 +496,7 @@ ENGINE.GAME = {
     ANIMATED.clear();
     ANIMATED._data = new Array();
     this._currentmap = this._me.map;
-    var url = ENGINE.url + 'LOADMAPS' + this._currentmap;
+    var url = ENGINE.url + 'LIVELOADMAPS' + this._currentmap;
     //############ UPDATE VARIABLES
     if (this._updateItemTimer != null) clearTimeout(this._updateItemTimer);
     this._itenslist = [];
@@ -625,6 +661,7 @@ ENGINE.GAME = {
     this._entityCount += 1;
     this._loadEntityObj(tile, scenedata.name, scenedata.entity, function (obj) {
       ANIMATED._data[scenedata.name].shape.group.type = "NPC";
+      ENGINE.GAME._npcData[scenedata.name] = scenedata.entity;
     });
   },
 
@@ -650,10 +687,10 @@ ENGINE.GAME = {
       this._playerstemp[player.login] = player;
       return;
     }
-    if (player.login && player.save && player.map && player.entity) { //load buffered players
+    if (player.login && player.entity) { //load buffered players
       if (!this._players[player.login] || typeof (this._players[player.login]) == _UN) {//add new        
-        if(!this._players[player.login])this._players[player.login] = {};
-        console.log('Add new player', player.login,ENGINE.GAME._stagesloaded);
+        this._players[player.login] = {};
+        console.log('Add new player', player.login, ENGINE.GAME._stagesloaded);
         if (typeof (player.pos) == _UN) player.pos = this._spawnposition.clone(); //is not have        
         var startile = ENGINE.TILE.getTileByXY(0, 0); //default tile to load players
         var url = ENGINE.url + 'LAOADENT' + player.entity;
@@ -666,12 +703,11 @@ ENGINE.GAME = {
         this._players[player.login].qua = player.qua;
         this._players[player.login].speed = player.speed;
         HELPER.updateArray(this._players[player.login], player); //update base with player data
-
         this._loadEntityObj(startile, player.login, data)
       } else {//update existing or Load complete
         if (player.login == ENGINE.login && typeof (CONTROLS.screenSpacePanning) == _UN) {
-          console.log('playerJoin complete', player.login,this._completeloaded);
-          var campos = ANIMATED._data[player.login].shape.position.clone().
+          console.log('playerJoin complete', player.login, this._completeloaded);
+          var campos = ANIMATED._data[player.login].object.position.clone().
             add(new THREE.Vector3(0, 10, 0)).
             sub(new THREE.Vector3(0, 0, 5));
           ENGINE.CAM.change(ENGINE.CAM.MODEL.ORBIT, campos, ANIMATED._data[player.login].shape);
@@ -695,6 +731,7 @@ ENGINE.GAME = {
 
   _firstcomplete: false,
   clearCache: async function () {
+    //this._npcatualizeposition();
     this._playerstemp = [];
     ENGINE.showLoading(false);
     ENGINE.scene.visible = true;
@@ -713,8 +750,34 @@ ENGINE.GAME = {
           clearInterval(volu);
         }
       }, 10);
-
   },
+
+
+  /*_npcatualizeposition: function () {    
+    var npcarray = ENGINE.GAME._npcData;
+    for (var i = 0; i < Object.keys(npcarray).length; i++) {
+      var npcname = Object.keys(npcarray)[i];
+      var npcdata = npcarray[npcname];
+      if (npcdata) { //new default npc position         
+        if (npcdata.pos) {
+          npcdata.pos = new THREE.Vector3(
+            npcdata.pos.x,
+            npcdata.pos.y + 1.5,
+            npcdata.pos.z
+          );
+        }
+        if (npcdata.qua) {
+          npcdata.qua = new THREE.Quaternion(
+            npcdata.qua.x,
+            npcdata.qua.y,
+            npcdata.qua.z,
+            npcdata.qua.w
+          )
+        }
+        ENGINE.Physic.bodyTeleport(ANIMATED._data[npcname].shape,npcdata.pos,npcdata.qua);
+      }
+    }
+  },*/
 
 
   revivePlayerAudio() {
@@ -736,7 +799,14 @@ ENGINE.GAME = {
 
 
   playerLeave: function (login) {
-    
+    //FAZER REMOVER AUDIOS QUANDO PLAYER QUITAR
+    if (ANIMATED._data[login]) {
+      for (var i = 0; i < ANIMATED._data[login].audio.length; i++) {
+        if (ANIMATED._data[login].audio[i].isPlaying == true)
+          ANIMATED._data[login].audio[i].stop();
+      }
+      ANIMATED._data[login].object.remove(ANIMATED._data[login].audio);
+    }
     if (ENGINE.GAME._itenslist[login].itens)//remove owned itens
       for (var i = 0; i < ENGINE.GAME._itenslist[login].itens.length; i++) {
         if (ENGINE.GAME._itenslist[login].itens[i].scene)
@@ -776,7 +846,7 @@ ENGINE.GAME = {
         console.warn('_loadEntityObj already loaded', name);
         return;
       }*/
-    console.log('loadentity', name, ANIMATED._data[name]);
+
     ANIMATED.load(
       data.model.url,
       name,
@@ -795,6 +865,7 @@ ENGINE.GAME = {
           data.model.qua.y,
           data.model.qua.z,
           data.model.qua.w);
+
 
         var startposition = tile.position.clone();
         if (typeof (ENGINE.GAME._players[name]) !== _UN) {
@@ -817,6 +888,32 @@ ENGINE.GAME = {
             startposition.z + data.box.pos.z
           );
           data.qua = new THREE.Quaternion(data.box.qua.x, data.box.qua.y, data.box.qua.z, data.box.qua.w);
+        }
+
+
+        var npcdata = ENGINE.GAME._npcData[name];
+        if (!npcdata) npcdata = ENGINE.GAME._npcs[name];
+        console.log('datan', npcdata)
+        if (npcdata) { //new default npc position         
+          if (npcdata.pos) {
+            startposition = new THREE.Vector3(
+              npcdata.pos.x,
+              npcdata.pos.y,
+              npcdata.pos.z
+            );
+            startposition.y = 1.5;
+          }
+          if (npcdata.qua) {
+            data.qua = new THREE.Quaternion(
+              npcdata.qua.x,
+              npcdata.qua.y,
+              npcdata.qua.z,
+              npcdata.qua.w
+            )
+          }
+          console.log('loadNPC', name, data);
+        } else {
+          console.log('loadPlayer', name, data);
         }
 
         ENGINE.Physic.bodyTeleport(
@@ -868,11 +965,12 @@ ENGINE.GAME = {
       for (var e = 0; e < Object.keys(audioelement).length; e++) {
         var id = Object.keys(audioelement)[e];
         var audioarray = audioelement[id];
-        if (audioarray.live) { //have sound loaded
+        if (audioarray.live) { //already previus loaded thes sound in this model
           ANIMATED._data[entityName].audio.add(audioarray.live);
-        } else { //no sound loaded
+        } else { //this sound not loaded in this model
           HELPER.audioAtatch(audioarray.audio, null, (sound) => { //only buff
             audioarray.live = sound.audio;
+            ANIMATED._data[entityName].audio.add(audioarray.live);
           });
           repeat = true;
         }
@@ -1075,11 +1173,11 @@ ENGINE.GAME = {
   },
 
 
-  _loadedStages:{},//loaded itens from buffer
-  _loadComplete:  function (completed) {
+  _loadedStages: {},//loaded itens from buffer
+  _loadComplete: function (completed) {
     if (ENGINE.GAME._loadedStages['item'] &&
-    ENGINE.GAME._loadedStages['drop'] &&
-    ENGINE.GAME._loadedStages['sound']) { //all complete
+      ENGINE.GAME._loadedStages['drop'] &&
+      ENGINE.GAME._loadedStages['sound']) { //all complete
       ENGINE.GAME._stagesloaded = true;
       for (var i = 0; i < Object.keys(ENGINE.GAME._playerstemp).length; i++) {
         var kname = Object.keys(ENGINE.GAME._playerstemp)[i];
@@ -1095,12 +1193,12 @@ ENGINE.GAME = {
       CONTROLS.mouseEvent = ENGINE.GAME.mouseEvent;
       CONTROLS.mouseWheel = ENGINE.GAME.mouseWheel;
 
-    }else{ //waiting all load
-        if(completed){
-          console.log('Loaded',completed);
-          ENGINE.GAME._loadedStages[completed]=true;
-          setTimeout(()=>{ENGINE.GAME._loadComplete()},500);//check if all loaders finished
-        }      
+    } else { //waiting all load
+      if (completed) {
+        console.log('Loaded', completed);
+        ENGINE.GAME._loadedStages[completed] = true;
+        setTimeout(() => { ENGINE.GAME._loadComplete() }, 500);//check if all loaders finished
+      }
     }
 
 
@@ -1208,6 +1306,7 @@ ENGINE.GAME = {
       var JSONDATA = JSON.parse(JSON.stringify(received.data));
       if (JSONDATA.CONNECTED) {
         console.log('connected');
+        ENGINE.GAME._connected = true;
         ENGINE.GAME._getPlayerConfig();
       } else {
         ENGINE.GAME.message(JSONDATA);
@@ -1281,14 +1380,25 @@ ENGINE.GAME = {
       WSsend('PONG', { login: ENGINE.login });
       return;
     }
-    //update online players
-    if (typeof (data.ONLINEPLAYERS) !== _UN) {
-      var data = data.ONLINEPLAYERS;
-      for (var i = 0; i < Object.keys(data).length; i++) {
-        var kname = Object.keys(data)[i];
+    //########### ONLINEPLAYERS #############
+    //online players //get all playes on this map
+    if (typeof (data.ONLINEPLAYERS) !== _UN && data.ONLINEPLAYERS.players) {
+      var playerdata = data.ONLINEPLAYERS.players;
+      for (var i = 0; i < Object.keys(playerdata).length; i++) {
+        var player = Object.keys(playerdata)[i];
         // console.log('send', data[kname].login);
-        this.playerJoin(data[kname]);
+        this.playerJoin(playerdata[player]);
       }
+      var npcdata = data.ONLINEPLAYERS.npcs;
+      console.log('movenpc', npcdata);
+      if (npcdata && npcdata.length > 0)
+        for (var i = 0; i < Object.keys(npcdata).length; i++) {
+          var npcname = Object.keys(npcdata)[i];
+          console.log('npc update', npcname);
+          ENGINE.GAME._npcs[npcname] = npcdata[npcname];
+          if (npcdata[npcname].pos) ENGINE.GAME._npcData[npcname].pos = npcdata[npcname].pos;
+          if (npcdata[npcname].qua) ENGINE.GAME._npcData[npcname].qua = npcdata[npcname].qua;
+        }
       return;
     }
     //############################ AFTER THIS ONLY WORKS IF ONLINE ######################
@@ -1304,7 +1414,54 @@ ENGINE.GAME = {
       var speedExtra = data.MOVETO.destin.speedExtra;
       speed = (speed + (isNaN(speedExtra) == true ? 0 : speedExtra));
       ENGINE.Physic.bodyMove(object, movto, speed, data.MOVETO.login);
+      //moving if have npc values      
+      var npcdata = data.MOVETO.npcs;
+      //console.log(npcdata,data.MOVETO);      
+      if (npcdata)
+        for (var i = 0; i < Object.keys(npcdata).length; i++) {
+          var npcname = Object.keys(npcdata)[i];
+          var npcdata = npcdata[npcname];
+          if (npcdata.pos && ANIMATED._data[npcname] && ANIMATED._data[npcname].shape) {
+            var newpos = new THREE.Vector3(npcdata.pos.x, npcdata.pos.y, npcdata.pos.z);
+            var newrotation = new THREE.Quaternion(npcdata.qua.x, npcdata.qua.y, npcdata.qua.z, npcdata.qua.w);
+            var shape = ANIMATED._data[npcname].shape;
+            if (shape.position.distanceTo(newpos) > 0.5) {
+              var objphysic = shape.userData.physicsBody;
+              //console.log(objphysic);
+              ENGINE.GAME._npcData[npcname].pos = newpos;
+              ENGINE.GAME._npcData[npcname].qua = newrotation;
+              var world = objphysic.getWorldTransform();
+              var positionA = world.getOrigin();
+              var rotationA = world.getRotation();
+              positionA.setValue(newpos.x, newpos.y, newpos.z);
+              world.setOrigin(positionA);
+              rotationA.setValue(newrotation.x, newrotation.y, newrotation.z, newrotation.w);
+              world.setRotation(rotationA);
+            }
+            /*if(ANIMATED._data[npcname].object.position.distanceTo(newpos)>0.5){
+              var newrotation=new THREE.Quaternion(
+                npcdata.qua.x,npcdata.qua.y,npcdata.qua.z,npcdata.qua.w);
+              var physicobject=ANIMATED._data[npcname].object.parent.userData.physicsBody;
+              console.log(phyobject);
+              //ENGINE.physic.bodyUpdate(ANIMATED._data[npcname].shape,newpos,newrotation);
+            }*/
+          }
+
+          //this._npcs[npcname]
+          //this._npcs[npcname]=npcdata[npcname];        
+
+        }
       return;
+    }
+    //################ NPCMOVE AI ############
+    if (typeof (data.NPCMOVE) !== _UN) {
+      if (typeof (data.NPCMOVE.login) == _UN || typeof (data.NPCMOVE.destin) == _UN) return;
+      if (data.NPCMOVE.login == ENGINE.login) return; //disable auto listen self moves
+      var object = ANIMATED._data[data.NPCMOVE.login].shape;
+      var movto = new THREE.Vector3().copy(data.NPCMOVE.destin);
+      var speed = ENGINE.GAME._speed.player * data.NPCMOVE.speed;
+      console.log('NPCMOVE', movto, speed, data.NPCMOVE.login)
+      ENGINE.Physic.bodyMove(object, movto, speed, data.NPCMOVE.login);
     }
     //########### UPDATEPLAYER #############
     //update player real position 
@@ -1313,26 +1470,33 @@ ENGINE.GAME = {
         typeof (data.UPDATEPLAYER.pos) == _UN ||
         typeof (data.UPDATEPLAYER.qua) == _UN ||
         typeof (ANIMATED._data[data.UPDATEPLAYER.login]) == _UN) return;
+      var login = data.UPDATEPLAYER.login;
       var pos = data.UPDATEPLAYER.pos;
       var position = new THREE.Vector3(pos.x, pos.y, pos.z);
       var qua = data.UPDATEPLAYER.qua;
       var rotation = new THREE.Quaternion(qua.x, qua.y, qua.z, qua.w);
-      var object = ANIMATED._data[data.UPDATEPLAYER.login].shape;
+      var object = ANIMATED._data[login].shape;
       var phyobject = object.userData.physicsBody;
+      var active = ANIMATED._data[login].active;
       ENGINE.Physic.bodyUpdate(object, position, rotation);
+
+      if (data.UPDATEPLAYER.active && active != data.UPDATEPLAYER.active)
+        ANIMATED.change(login, active, 10); //force animation as same of received by update
+
       //only updatemoves if not me
+
+
       if (typeof (data.UPDATEPLAYER.moves) !== _UN && data.UPDATEPLAYER.moves != null &&
         data.UPDATEPLAYER.login !== ENGINE.login) {
         pos = data.UPDATEPLAYER.moves.destin;
         var destin = new THREE.Vector3(pos.x, pos.y, pos.z);
         ENGINE.Physic.bodyMove(phyobject, destin, data.UPDATEPLAYER.moves.speed, data.UPDATEPLAYER.login);
       }
-      //update NPCS changes
-      return;
-      var npc = data.UPDATEPLAYER.npc;
-      if (npc && npc != null && Object.keys(npc).length > 0) {
-        for (var i = 0; i < Object.keys(npc).length; i++) {
-          var npcname = Object.keys(npc)[i];
+      //update NPCS changes      
+      var npcs = data.UPDATEPLAYER.npcs;
+      if (npcs && npcs != null && Object.keys(npcs).length > 0) {
+        for (var i = 0; i < Object.keys(npcs).length; i++) {
+          var npcname = Object.keys(npcs)[i];
           console.log('change npc', npcname);
         }
       }

@@ -145,8 +145,13 @@ ENGINE.ENTITY = {
         ENGINE.ENTITY._enchange(input);
       })
     });
-    $('#attributes,#attributes2 select,input').each((index, input) => {
-      $(input).off('change').on('change', () => {
+    $('#attributes select,input').each((index, input) => {
+      $(input).off('change').on('change', () => {        
+        ENGINE.ENTITY._enchange(input);
+      })
+    });
+    $('#attributes2 select,input').each((index, input) => {
+      $(input).off('change').on('change', () => {        
         ENGINE.ENTITY._enchange(input);
       })
     });
