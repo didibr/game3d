@@ -1,5 +1,6 @@
 window._UN = 'undefined';
 ENGINE.GAME = {
+  _cssrender:null,
   _delta: 0,
   _me: {}, //my data
   _players: new Array(),//array same as mydata    
@@ -11,7 +12,7 @@ ENGINE.GAME = {
   _tiles: null,
   _currentmap: null,
   _speed: {
-    player: 2.3, cam: 1, camRotate: 1, clickspeed: 1, updTime: 2, zoomSp: 40,
+    player: 2, cam: 1, camRotate: 1, clickspeed: 1, updTime: 2, zoomSp: 40,
             /*system*/ mbLeft: 0, mbRight: 0, wheel: 0
   },
   _spawnposition: new THREE.Vector3(),
@@ -37,14 +38,17 @@ ENGINE.GAME = {
   _moveRow: null,
   _connected: false,
 
+  //_cursor: { up: 'arrow1.png', down: 'arrow3.png', clicked: 0, lock: 0 },
+
   update: function (delta) {
     if (this._completeloaded == false) return;
     this.lastMovTime += delta;
-    //this.lastMovClick += delta;
     CONTROLS.update(delta); //update camera position
     this.cameraFocusPlayer(delta); //update camera target position (folow player smooth)    
     this.updatePlayerState(delta);
     this.updateColiders(delta);
+    this.renderCSS(delta);
+    //this.cursorUpdate(delta);
     if (this._speed.mbLeft == 1) this.onCanvasClick(null);
   },
 
@@ -59,6 +63,11 @@ ENGINE.GAME = {
     requestAnimationFrame(ENGINE.GAME.renderupdate);
   },
 
+
+  renderCSS:function(delta){
+    this._cssrender.render( ENGINE.scene, ENGINE.camera );
+  },
+
   _xa: 1,
   _lastPolar: 0,
   _realzoom: 0,
@@ -71,14 +80,11 @@ ENGINE.GAME = {
     //CONTROLS.target.set(this._me.pos.x,this._me.pos.y,this._me.pos.z); return;//easy folow    
     var distance = CONTROLS.target.distanceTo(this._me.pos);
     var direction = new THREE.Vector3().subVectors(this._me.pos, CONTROLS.target).normalize();
-
-
     var maxpol = 2.4329528684033384; //minimun inferior angle under ground line
     var minpol = { up: 0.1728786603604932, dow: 1.3712127935080203 } //maximum superior angle 0up 3.14dow   
     var groundline = Math.PI / 2; //angle when camera colide ground
     var actualangle = CONTROLS.getPolarAngle(); //actual angle of camera
     var madistance = CONTROLS.maxDistance; //active camera distance zomm
-
     //################ Folow Player Smooth
     var speedBase = this._speed.cam;//+ this._speed.camExtra;
     if (this._speed.mbRight == 1) this._speed.cam + 5;
@@ -150,8 +156,6 @@ ENGINE.GAME = {
         CONTROLS.maxDistance = calculado;
       }
     }
-
-
     //change camera position 
     return;
     if (ENGINE.GAME._speed.mbRight == 1) return;
@@ -222,7 +226,6 @@ ENGINE.GAME = {
             });
           }
         });
-
       }
       this._updateColidersTimer = 0;
     }
@@ -365,26 +368,14 @@ ENGINE.GAME = {
       } else {
         ENGINE.GAME._speed.mbRight = 0;
       }
-
     if (event.button == 0)
-      if (down == 1) {
+      if (down == 1) { //_cursor:{up:'arrow1.png',down:'arrow3.png'}        
+        //ENGINE.GAME.changeCursor(ENGINE.GAME._cursor.down, true, true);
         ENGINE.GAME._speed.mbLeft = 1;
       } else {
+        //ENGINE.GAME.changeCursor(ENGINE.GAME._cursor.up, true, false);
         ENGINE.GAME._speed.mbLeft = 0;
       }
-  },
-
-  playerAction: function (action) { //Change Player State
-    if (this._completeloaded == false && typeof (ENGINE.GAME._players[ENGINE.login]) == _UN) return;
-
-    if (action == 'run') {
-      //console.log('fastrun');
-      ENGINE.GAME._players[ENGINE.login].speedExtra = 2;
-    }
-    if (action == '') {
-      //console.log('normal');
-      ENGINE.GAME._players[ENGINE.login].speedExtra = 0;
-    }
   },
 
   play: async function () {
@@ -411,22 +402,12 @@ ENGINE.GAME = {
       //console.log('Using WebWorkers');
       webSocketWorker.port.removeEventListener('message', ENGINE.GAME._connectMessage);
       webSocketWorker.port.addEventListener('message', ENGINE.GAME._connectMessage);
-      /*webSocketWorker.port.addEventListener('message', (receive) => {
-        requestAnimationFrame(() => {
-          ENGINE.GAME.messagew(receive);
-        });
-      });*/
       await WSconnect(socketws + socklocal);
     }
     if (metod == 0) {//############### using pure socket
       //console.log('Using Vanila');
       webSocketWorker.port.removeEventListener('message', ENGINE.GAME._connectMessage);
       WSOmessage = ENGINE.GAME._connectMessage;
-      /*WSOmessage = (receive) => {
-        requestAnimationFrame(() => {
-          ENGINE.GAME.messagew(receive);
-        });
-      }*/
       WSsend = WSOsend;
       await WSOconnect(socketws + socklocal);
     }
@@ -468,8 +449,6 @@ ENGINE.GAME = {
           ENGINE.GAME._newLogin(true);
         }
       }, 500);
-      //ENGINE.login = $('#xlogin').val();      
-      // });
     }
   },
 
@@ -489,7 +468,7 @@ ENGINE.GAME = {
     ENGINE.Physic.skinMaterial.visible = false;
     ENGINE.Physic.physicMaterial.opacity = 0;
     ENGINE.debugRay = false;
-    ENGINE.Physic.debugPhysics = true;
+    ENGINE.Physic.debugPhysics = false;
     HELPER.hideTransform();
     ENGINE.scene.visible = false;
     ENGINE.showLoading(true);
@@ -522,6 +501,20 @@ ENGINE.GAME = {
     this._moveRow = null;
     this._NPCarray = {};
     this._loadedStages = {};
+    ENGINE.mouseShow('arrow1.png');
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.addEventListener('dragover', event => event.preventDefault());
+    document.addEventListener('drop', event => event.preventDefault());
+
+
+    this._cssrender = new RENDERER.renderer();
+    this._cssrender.setSize( ENGINE.canvObj.width, ENGINE.canvObj.height );
+    this._cssrender.domElement.style.position = 'absolute';
+    this._cssrender.domElement.style.top = ENGINE.canvObj.offsetTop+'px';
+    this._cssrender.domElement.style.left = ENGINE.canvObj.offsetLeft+'px';
+    this._cssrender.domElement.id='cssrender';
+    document.body.appendChild( this._cssrender.domElement );
+   
 
     var data = await HELPER.simpleDownloadSync(url);
     var tiles = data.tiles;
@@ -605,9 +598,6 @@ ENGINE.GAME = {
         }
         if (lc.issun == true) l1.isSun = true;
         if (l1.helper && l1.helper.parent) {
-          //if(l1.helper.parent.target.parent){
-          //  l1.helper.parent.target.parent.remove(l1.helper.parent.target);
-          // }
           l1.helper.parent.remove(l1.helper);
         }
       }
@@ -617,14 +607,12 @@ ENGINE.GAME = {
     var script = data.script;
     if (typeof (script) !== _UN) {
       HELPER.script(script);
-      //$('#mscript').val(script);
     }
 
     //sky
     window.DTA = data;
     var sky = data.sky;
     if (typeof (sky) != _UN) {
-      //console.log(ENGINE.url + 'images/' + sky.bg);
       ENGINE.SKY.create(this._tiles, ENGINE.url + 'images/' + sky.bg);//'./images/pano0.jpg'
     }
 
@@ -659,9 +647,9 @@ ENGINE.GAME = {
 
     this._entitys[scenedata.name] = scenedata.entity;
     this._entityCount += 1;
+    ENGINE.GAME._npcData[scenedata.name] = scenedata.entity;
     this._loadEntityObj(tile, scenedata.name, scenedata.entity, function (obj) {
       ANIMATED._data[scenedata.name].shape.group.type = "NPC";
-      ENGINE.GAME._npcData[scenedata.name] = scenedata.entity;
     });
   },
 
@@ -690,7 +678,7 @@ ENGINE.GAME = {
     if (player.login && player.entity) { //load buffered players
       if (!this._players[player.login] || typeof (this._players[player.login]) == _UN) {//add new        
         this._players[player.login] = {};
-        console.log('Add new player', player.login, ENGINE.GAME._stagesloaded);
+        //console.log('Add new player', player.login, ENGINE.GAME._stagesloaded);
         if (typeof (player.pos) == _UN) player.pos = this._spawnposition.clone(); //is not have        
         var startile = ENGINE.TILE.getTileByXY(0, 0); //default tile to load players
         var url = ENGINE.url + 'LAOADENT' + player.entity;
@@ -706,11 +694,12 @@ ENGINE.GAME = {
         this._loadEntityObj(startile, player.login, data)
       } else {//update existing or Load complete
         if (player.login == ENGINE.login && typeof (CONTROLS.screenSpacePanning) == _UN) {
-          console.log('playerJoin complete', player.login, this._completeloaded);
+          // console.log('playerJoin complete', player.login, this._completeloaded);
+          CONTROLS = OrbitControl.create(ENGINE.camera, ENGINE.GAME._cssrender.domElement);
           var campos = ANIMATED._data[player.login].object.position.clone().
             add(new THREE.Vector3(0, 10, 0)).
             sub(new THREE.Vector3(0, 0, 5));
-          ENGINE.CAM.change(ENGINE.CAM.MODEL.ORBIT, campos, ANIMATED._data[player.login].shape);
+          ENGINE.CAM.change(1, campos, ANIMATED._data[player.login].shape, ENGINE.GAME._cssrender.domElement);
           CONTROLS.minDistance = 14;
           CONTROLS.maxDistance = 14;
           CONTROLS.rotateSpeed = 0.4;
@@ -753,33 +742,6 @@ ENGINE.GAME = {
   },
 
 
-  /*_npcatualizeposition: function () {    
-    var npcarray = ENGINE.GAME._npcData;
-    for (var i = 0; i < Object.keys(npcarray).length; i++) {
-      var npcname = Object.keys(npcarray)[i];
-      var npcdata = npcarray[npcname];
-      if (npcdata) { //new default npc position         
-        if (npcdata.pos) {
-          npcdata.pos = new THREE.Vector3(
-            npcdata.pos.x,
-            npcdata.pos.y + 1.5,
-            npcdata.pos.z
-          );
-        }
-        if (npcdata.qua) {
-          npcdata.qua = new THREE.Quaternion(
-            npcdata.qua.x,
-            npcdata.qua.y,
-            npcdata.qua.z,
-            npcdata.qua.w
-          )
-        }
-        ENGINE.Physic.bodyTeleport(ANIMATED._data[npcname].shape,npcdata.pos,npcdata.qua);
-      }
-    }
-  },*/
-
-
   revivePlayerAudio() {
     for (var i = 0; i < Object.keys(this._audioslist).length; i++) {
       var login = Object.keys(this._audioslist)[i];
@@ -814,7 +776,7 @@ ENGINE.GAME = {
             var obj3d = ENGINE.GAME._itenslist[login].itens[i].scene[b]._OBJ3d;
             if (obj3d.isObject3D) {
               if (obj3d.parent) obj3d.parent.remove(obj3d);
-              obj3d.selfremove = true;
+              //obj3d.selfremove = true;
             }
           }
       }
@@ -825,7 +787,7 @@ ENGINE.GAME = {
             var obj3d = ENGINE.GAME._droplist[login].drops[i].scene[b]._OBJ3d;
             if (obj3d.isObject3D) {
               if (obj3d.parent) obj3d.parent.remove(obj3d);
-              obj3d.selfremove = true;
+              //obj3d.selfremove = true;
             }
           }
       }
@@ -842,20 +804,11 @@ ENGINE.GAME = {
 
   //Load Models and itens owned in data.itens as inuse
   _loadEntityObj: function (tile, name, data, callback) {
-    /*if(ANIMATED._data[name] ){
-        console.warn('_loadEntityObj already loaded', name);
-        return;
-      }*/
-
     ANIMATED.load(
       data.model.url,
       name,
       data.model.sca,
       function (mobj) {
-        //console.log('loadentity complete', name);
-        //ANIMATED._data[name].shape.userData.physicsBody.setActivationState(4);
-        //ANIMATED._data[name].shape.userData.physicsBody.setCollisionFlags(2);
-
         mobj.position.set(
           data.model.pos.x,
           data.model.pos.y,
@@ -865,8 +818,6 @@ ENGINE.GAME = {
           data.model.qua.y,
           data.model.qua.z,
           data.model.qua.w);
-
-
         var startposition = tile.position.clone();
         if (typeof (ENGINE.GAME._players[name]) !== _UN) {
           if (data.pos) {
@@ -876,7 +827,6 @@ ENGINE.GAME = {
               data.pos.z
             );
             startposition = data.pos.clone();
-
           } else {
             startposition = ENGINE.GAME._spawnposition.clone();
             // console.log('new', startposition)
@@ -893,7 +843,7 @@ ENGINE.GAME = {
 
         var npcdata = ENGINE.GAME._npcData[name];
         if (!npcdata) npcdata = ENGINE.GAME._npcs[name];
-        console.log('datan', npcdata)
+        //console.log('datan', npcdata)
         if (npcdata) { //new default npc position         
           if (npcdata.pos) {
             startposition = new THREE.Vector3(
@@ -911,9 +861,9 @@ ENGINE.GAME = {
               npcdata.qua.w
             )
           }
-          console.log('loadNPC', name, data);
+          //console.log('loadNPC', name, data);
         } else {
-          console.log('loadPlayer', name, data);
+          //console.log('loadPlayer', name, data);
         }
 
         ENGINE.Physic.bodyTeleport(
@@ -937,6 +887,7 @@ ENGINE.GAME = {
         delete data.itens;
         delete data.drops;
         delete data.audios;
+        ENGINE.GAME.createBar(name);
         if (typeof (callback) == 'function') callback(mobj);
       }, data);
   },
@@ -966,6 +917,7 @@ ENGINE.GAME = {
         var id = Object.keys(audioelement)[e];
         var audioarray = audioelement[id];
         if (audioarray.live) { //already previus loaded thes sound in this model
+          //console.log(ANIMATED._data[entityName].audio,audioarray.live);
           ANIMATED._data[entityName].audio.add(audioarray.live);
         } else { //this sound not loaded in this model
           HELPER.audioAtatch(audioarray.audio, null, (sound) => { //only buff
@@ -974,9 +926,7 @@ ENGINE.GAME = {
           });
           repeat = true;
         }
-
       }
-
     }
     if (repeat == true) {
       if (this._updateAudioTimer != null) clearTimeout(this._updateAudioTimer);
@@ -1182,14 +1132,16 @@ ENGINE.GAME = {
       for (var i = 0; i < Object.keys(ENGINE.GAME._playerstemp).length; i++) {
         var kname = Object.keys(ENGINE.GAME._playerstemp)[i];
         var data = ENGINE.GAME._playerstemp[kname];
-        //var model = { entity: undefined, login: undefined, map: undefined, pos: undefined, qua: undefined, 
-        //  speed: undefined, save: {} };
-        // HELPER.updateArray(model, data);
         ENGINE.GAME.playerJoin(data);
       }
+      var livearea=$(this._cssrender.domElement);
+      //livearea.hide();
+      //$(window)
       $(window).off("keyup").on("keyup", this.onDocumentKeyUp);
       $(window).off("keydown").on("keydown", this.onDocumentKeyDown);
       $(ENGINE.canvObj).off("click").on("click", this.onCanvasClick);
+      $(window).off("mousemove").on("mousemove", ENGINE._onMouseMove);      
+      $(window).off("resize").on("resize", ENGINE._onWindowResize );
       CONTROLS.mouseEvent = ENGINE.GAME.mouseEvent;
       CONTROLS.mouseWheel = ENGINE.GAME.mouseWheel;
 
@@ -1200,107 +1152,183 @@ ENGINE.GAME = {
         setTimeout(() => { ENGINE.GAME._loadComplete() }, 500);//check if all loaders finished
       }
     }
-
-
-    /*
-    setTimeout( () => {
-      if (ENGINE.GAME._loadedStages['item'] &&
-        ENGINE.GAME._loadedStages['drop'] &&
-        ENGINE.GAME._loadedStages['sound']) {
-        ENGINE.GAME._stagesloaded = true;
-        //ENGINE.GAME._freezeActors();
-        for (var i = 0; i < Object.keys(ENGINE.GAME._playerstemp).length; i++) {
-          var kname = Object.keys(ENGINE.GAME._playerstemp)[i];
-          var data = ENGINE.GAME._playerstemp[kname];
-          //var model = { entity: undefined, login: undefined, map: undefined, pos: undefined, qua: undefined, 
-          //  speed: undefined, save: {} };
-          // HELPER.updateArray(model, data);
-          ENGINE.GAME.playerJoin(data);
-        }
-        $(window).off("keyup").on("keyup", this.onDocumentKeyUp);
-        $(window).off("keydown").on("keydown", this.onDocumentKeyDown);
-        $(ENGINE.canvObj).off("click").on("click", this.onCanvasClick);
-        CONTROLS.mouseEvent = ENGINE.GAME.mouseEvent;
-        CONTROLS.mouseWheel = ENGINE.GAME.mouseWheel;
-      } else {
-        if(completed){
-          console.log('Loaded',completed);
-          ENGINE.GAME._loadedStages[completed]=true;
-          setTimeout(()=>{ENGINE.GAME._loadComplete()},1000);//check if all loaders finished
-        }        
-      }
-
-    }, 500);*/
   },
 
   onDocumentKeyUp: function (event) {
-    if (ENGINE.GAME.disableTileClick == true || typeof (ENGINE.intersects) == _UN) return;
-    if (event.code == 'KeyD' && (!event.ctrlKey)) { //key D - Run
-      ENGINE.GAME.playerAction('');
+    console.log('keyup');
+    event.preventDefault();
+    var actions = {};
+    if (ENGINE.GAME.disableTileClick == true) return false;
+    if (event.code == 'KeyD' && (!event.ctrlKey) && typeof (ENGINE.intersects) != _UN) { //key D - Run      
+      actions.run = undefined;
     }
+    ENGINE.GAME.playerAction(ENGINE.login, actions)
+    return false;
   },
 
   onDocumentKeyDown: function (event) {
+    console.log('keydown')
+    event.preventDefault();
+    var actions = {};
     if (event.code == 'KeyZ' && (event.ctrlKey || event.metaKey)) {
-      ENGINE.adminPopup();
+      ENGINE.adminPopup();//Editor
     }
-    if (ENGINE.GAME.disableTileClick == true || typeof (ENGINE.intersects) == _UN) return;
+    if (ENGINE.GAME.disableTileClick == true) return;
     if (event.keyCode == 112 && (!event.ctrlKey)) { //key F1
-      ENGINE.GAME.cameraFocusPlayer();
+      ENGINE.GAME.cameraFocusPlayer();//focus player
       return false;
     }
-    if (event.code == 'KeyD' && (!event.ctrlKey)) { //key D - Run
-      ENGINE.GAME.playerAction('run');
+    if (event.code == 'KeyD' && (!event.ctrlKey) && typeof (ENGINE.intersects) != _UN) { //key D - Run      
+      actions.run = true;
     }
+    if (event.code == 'KeyQ' && (!event.ctrlKey)) {
+      actions.attack = true;
+    }
+    if (event.keyCode == 32) { //space
+      actions.jump = true;
+    }
+    ENGINE.GAME.playerAction(ENGINE.login, actions)
+    return false;
+  },
+
+
+  playerAction: function (login, action) { //Change Player State
+    if (this._completeloaded == false) return;
+    var player = ENGINE.GAME._players[login];
+    if (typeof (player) == 'undefined' || player == null)
+      player = ENGINE.GAME._npcData[login];
+    if (typeof (player) == 'undefined' || player == null) return;
+    var animatedPlayer = ANIMATED._data[login];
+    if (!animatedPlayer.onAction) animatedPlayer.onAction = {};
+    //player run
+    if (action.run == true) {
+      player.speedExtra = 2;
+    } else {
+      player.speedExtra = 0;
+    }
+    //atack pressed
+    if (action.attack == true) {
+      var attackType = 'swatack';
+      animatedPlayer.onAction.attack = true;
+      ANIMATED.change(login, attackType, 10);
+      setTimeout(() => {
+        ANIMATED.deanimateType(login, attackType, true);
+        animatedPlayer.onAction.attack = false;
+      }, 500);
+    }
+    //jump
+    if (action.jump == true) {
+      if (animatedPlayer.onAction.jump != true) {
+        animatedPlayer.onAction.jump = true;
+        ANIMATED.change(login, 'jump', 10);
+        setTimeout(() => {
+          ENGINE.Physic.bodyJump(animatedPlayer.shape, 6);
+          setTimeout(() => {
+            ANIMATED.deanimateType(login, 'jump', true);
+            animatedPlayer.onAction.jump = false;
+          }, 1300);
+        }, 600);
+      }
+    }
+    if (login == ENGINE.login && Object.keys(action).length > 0) {
+      var pos = { x: player.pos.x, y: player.pos.y, z: player.pos.z };
+      var qua = null;
+      var near = ENGINE.GAME.getNearActors(2,login);
+      try {
+        qua = { x: player.qua.x, y: player.qua.y, z: player.qua.z, w: player.qua.w };
+      } catch (e) { qua = { x: 0, y: 0, z: 0, w: 1 } }
+      WSsend('ACTION', { login: login, action: action,near:near, pos: pos, qua: qua });
+    }
+
+  },
+
+
+  getNearActors:function(distance,login){
+    var ret={};
+    for(var i=0;i<Object.keys(ENGINE.GAME._npcData).length;i++){
+      var npcName=Object.keys(ENGINE.GAME._npcData)[i];
+      var npc=ENGINE.GAME._npcData[npcName];
+      if(npc.pos.distanceTo(ENGINE.GAME._players[login].pos) <= distance){
+        //NEED CALCULATE ANGLE BTWEEN PLAYER AND TARGET
+        /*var angle=ENGINE.GAME._players[login].pos.angleTo(npc.pos);
+        var angle=ENGINE.GAME._players[login].angle;
+        var fakeobj=new THREE.Object3D();
+            fakeobj.position.copy(ENGINE.GAME._players[login].pos);
+            fakeobj.lookAt(npc.pos);
+        var playerAngle =new THREE.Vector3();
+        fakeobj.getWorldDirection(playerAngle);
+        playerAngle = THREE.Math.radToDeg(Math.atan2(playerAngle.x, playerAngle.z));
+        angle= THREE.Math.radToDeg(Math.atan2(angle.x, angle.z));
+        console.log(angle,playerAngle);*/
+        ret[npcName]=1;
+      }
+    }
+    for(var i=0;i<Object.keys(ENGINE.GAME._players).length;i++){
+      var playerNane=Object.keys(ENGINE.GAME._players)[i];
+      var player=ENGINE.GAME._players[playerNane];
+      if(playerNane!==login)
+      if(player.pos.distanceTo(ENGINE.GAME._players[login].pos) <= distance){        
+        ret[playerNane]=2;
+      }
+    }
+   return ret;
   },
 
 
   lastMovTime: 0, //update mov position broadcast
+  contactClick: null,
   onCanvasClick: function (event) {
     if (ENGINE.GAME.disableTileClick == true || typeof (ENGINE.intersects) == _UN) return;
     if (ENGINE.intersects.length <= 0) return;
     if (typeof (ENGINE.GAME._players[ENGINE.login]) == _UN) return;
-    var contact = null;//ENGINE.intersects[0];
-
     for (var i = 0; i < ENGINE.intersects.length; i++) {
       var value = ENGINE.intersects[i];
-      if (value && value.object && value.object.group && value.object.group.name)
-        if (value.object.group.name == 'Tile') {
-          contact = value;
+      if (value && value.object && value.object.group && value.object.group.name) {
+        if (value.object.group.name == 'Player') {
+          ENGINE.GAME.contactClick = value;
           break;
         }
+        if (value.object.group.name == 'Tile') {
+          ENGINE.GAME.contactClick = value;
+          break;
+        }
+      }
     }
-    if (!contact) return;
-    var object = contact.object; //first encounter
-    if (typeof (object.group) == _UN) return;
-
+    var object = ENGINE.GAME.contactClick.object;
+    if (object == null || typeof (object) == _UN || typeof (object.group) == _UN) return;
     var playerdata = ENGINE.GAME._players[ENGINE.login];
-    var pos = { x: contact.point.x, y: contact.point.y, z: contact.point.z };
+    var pos = {
+      x: ENGINE.GAME.contactClick.point.x,
+      y: ENGINE.GAME.contactClick.point.y,
+      z: ENGINE.GAME.contactClick.point.z
+    };
     var speed = typeof (playerdata.speed) == _UN ? ENGINE.GAME._speed.player : playerdata.speed;
     var speedExtra = typeof (playerdata.speedExtra) == _UN ? 0 : playerdata.speedExtra;
 
-    var destin = {
-      square: object.group.square,
-      pos: pos,
-      speed: speed,
-      speedExtra: speedExtra,
+    if (object.group.name == 'Tile') { //Ground Click
+      var destin = {
+        square: object.group.square,
+        pos: pos,
+        speed: speed,
+        speedExtra: speedExtra,
+      }
+      //allow move up to 0.5 distance
+      if (ANIMATED._data[ENGINE.login].shape.position.distanceTo(new THREE.Vector3(pos.x, pos.y, pos.z)) > 0.7) {
+        ENGINE.Physic.bodyMove(
+          ANIMATED._data[ENGINE.login].shape,
+          new THREE.Vector3(pos.x, pos.y, pos.z), (speed + speedExtra), ENGINE.login);
+        if (ENGINE.GAME.lastMovTime > ENGINE.GAME._speed.clickspeed) {
+          _moveRow = { userdata: playerdata, destin: destin };
+          ENGINE.GAME.lastMovTime = 0;
+        }
+      }
     }
-    ENGINE.Physic.bodyMove(
-      ANIMATED._data[ENGINE.login].shape,
-      new THREE.Vector3(pos.x, pos.y, pos.z), (speed + speedExtra), ENGINE.login);
-    if (ENGINE.GAME.lastMovTime > ENGINE.GAME._speed.clickspeed) {
-      _moveRow = { userdata: playerdata, destin: destin };
-      ENGINE.GAME.lastMovTime = 0;
+    if (object.group.name == 'Player') {
     }
-
-
-
-
   },
 
+
   messagew: function (received) {
-    //window.RC=received;
-    //console.log('rcv',received);        
     if (!received.data) return;
     try {
       var JSONDATA = JSON.parse(JSON.stringify(received.data));
@@ -1314,6 +1342,23 @@ ENGINE.GAME = {
     } catch (e) {
       console.warn('messagew Error', e);
     }
+  },
+
+
+  createBar: function (login) {
+    var player = ENGINE.GAME._players[login];
+    if (typeof (player) == 'undefined') player = ENGINE.GAME._npcData[login];
+    if (!player || player == null || !player.attr) return;
+    if (!player.bars) player.bars = {};
+    const cssuser = document.createElement('div');
+    cssuser.className = 'cssuser';       
+    cssuser.id='cssuser'+login;
+    cssuser.innerHTML = login+`<br>
+    <progress class="healthbar" value="`+player.attr.hp+`" max="100"></progress>`;
+    $('#cssdata').append(cssuser);
+    player.bars.div = RENDERER.css(cssuser);
+    player.bars.div.position.set(0, 1.5, 0);
+    ANIMATED._data[login].object.add(player.bars.div);
   },
 
   message: function (data) {
@@ -1368,10 +1413,6 @@ ENGINE.GAME = {
 
       } else {
         this.playerJoin(data.VALIDLOGIN);
-        //var startile = ENGINE.TILE.getTileByXY(0, 0);
-        //var url = ENGINE.url + 'LAOADENT' + data.VALIDLOGIN.entity;
-        //var edata = await HELPER.simpleDownloadSync(url);
-        //this._loadEntityObj(startile, data.VALIDLOGIN.login, edata)
       }
       return;
     }
@@ -1390,7 +1431,7 @@ ENGINE.GAME = {
         this.playerJoin(playerdata[player]);
       }
       var npcdata = data.ONLINEPLAYERS.npcs;
-      console.log('movenpc', npcdata);
+      //console.log('movenpc', npcdata);
       if (npcdata && npcdata.length > 0)
         for (var i = 0; i < Object.keys(npcdata).length; i++) {
           var npcname = Object.keys(npcdata)[i];
@@ -1438,17 +1479,7 @@ ENGINE.GAME = {
               rotationA.setValue(newrotation.x, newrotation.y, newrotation.z, newrotation.w);
               world.setRotation(rotationA);
             }
-            /*if(ANIMATED._data[npcname].object.position.distanceTo(newpos)>0.5){
-              var newrotation=new THREE.Quaternion(
-                npcdata.qua.x,npcdata.qua.y,npcdata.qua.z,npcdata.qua.w);
-              var physicobject=ANIMATED._data[npcname].object.parent.userData.physicsBody;
-              console.log(phyobject);
-              //ENGINE.physic.bodyUpdate(ANIMATED._data[npcname].shape,newpos,newrotation);
-            }*/
           }
-
-          //this._npcs[npcname]
-          //this._npcs[npcname]=npcdata[npcname];        
 
         }
       return;
@@ -1458,10 +1489,22 @@ ENGINE.GAME = {
       if (typeof (data.NPCMOVE.login) == _UN || typeof (data.NPCMOVE.destin) == _UN) return;
       if (data.NPCMOVE.login == ENGINE.login) return; //disable auto listen self moves
       var object = ANIMATED._data[data.NPCMOVE.login].shape;
-      var movto = new THREE.Vector3().copy(data.NPCMOVE.destin);
+      var movto = new THREE.Vector3(data.NPCMOVE.destin.x, data.NPCMOVE.destin.y, data.NPCMOVE.destin.z);
       var speed = ENGINE.GAME._speed.player * data.NPCMOVE.speed;
-      console.log('NPCMOVE', movto, speed, data.NPCMOVE.login)
-      ENGINE.Physic.bodyMove(object, movto, speed, data.NPCMOVE.login);
+      if (!object.position.y || object.position.y < -10) {//teleport buggued npc        
+        ENGINE.Physic.bodyTeleport(ANIMATED._data[data.NPCMOVE.login].shape, movto);
+      } else {
+        ENGINE.Physic.bodyMove(object, movto, speed, data.NPCMOVE.login);
+      }
+    }
+    //########### ACTION  ##################
+    if (typeof (data.ACTION) !== _UN) {
+      //console.log(data.ACTION);
+      if (typeof (data.ACTION.login) == _UN ||
+        typeof (data.ACTION.action) == _UN ||
+        typeof (ANIMATED._data[data.ACTION.login]) == _UN ||
+        data.ACTION.login == ENGINE.login) return;
+      ENGINE.GAME.playerAction(data.ACTION.login, data.ACTION.action);
     }
     //########### UPDATEPLAYER #############
     //update player real position 
@@ -1479,13 +1522,9 @@ ENGINE.GAME = {
       var phyobject = object.userData.physicsBody;
       var active = ANIMATED._data[login].active;
       ENGINE.Physic.bodyUpdate(object, position, rotation);
-
       if (data.UPDATEPLAYER.active && active != data.UPDATEPLAYER.active)
         ANIMATED.change(login, active, 10); //force animation as same of received by update
-
       //only updatemoves if not me
-
-
       if (typeof (data.UPDATEPLAYER.moves) !== _UN && data.UPDATEPLAYER.moves != null &&
         data.UPDATEPLAYER.login !== ENGINE.login) {
         pos = data.UPDATEPLAYER.moves.destin;

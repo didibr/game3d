@@ -12,9 +12,11 @@ ENGINE.CAM = {
       CONTROLS.update();
   },
 
-  change: function (model, position, lookAt) {
+  change: function (model, position, lookAt, renderer) {
     var p = position;
     var l = lookAt;
+    var r = ENGINE.renderer.domElement;
+    if(typeof(renderer)!='undefined')r=renderer;
 
     if (model == this.MODEL.NONE) {
       if (CONTROLS !== null && CONTROLS.enabled) CONTROLS.enabled = false;
@@ -27,7 +29,7 @@ ENGINE.CAM = {
         CONTROLS = this.camera[model];
         CONTROLS.enabled = true;
       } else {
-        CONTROLS = OrbitControl.create(ENGINE.camera, ENGINE.renderer.domElement);
+        CONTROLS = OrbitControl.create(ENGINE.camera, r);
         this.camera[model] = CONTROLS;
       }
       //this.controls.autoRotate = true;

@@ -8,19 +8,27 @@ var ENGINE = {
   pass: '',
   divObj: null,//Objeto Div contem o canvas
   canvObj: null,//Objeto Canvas na pagina
-  scene: null,
+  scene: null,  
   camera: null,
+  scene2: null,
+  camera2:null,
   renderer: null,
   rayintersects: [],
   onRender: null, //function callback
   textureLoader: new THREE.TextureLoader(),
   raycaster: new THREE.Raycaster(),
-  mouse: new THREE.Vector2(),
+  mousePos: new THREE.Vector2(),
+  mouseSprite: null,
   clock: null,
   delta: 0,
   controls: CREATECONTROLS.create(),
   programs: new Array(),
   itemCache: new Array(), //Cache itens loaded in bones to clear
+  ortho:{
+    cursor:null,
+    cursorGroup:null,
+  },
+
 
   debugobjcts: function () {
     ENGINE.intersects = ENGINE.raycaster.intersectObjects(ENGINE.scene.children, true);
@@ -66,15 +74,7 @@ var ENGINE = {
   renderScene: function (ENGINEOBJ) {
     if (ENGINEOBJ.clock != null && typeof (ENGINEOBJ.clock) != 'undefined') {
       delta = ENGINEOBJ.clock.getDelta();
-      //Remove Objects Tagued as selfremove=true
-      /*
-      for (var i = 0; i < ENGINE.scene.children.length; i++) {
-        if (typeof (ENGINE.scene.children[i].selfremove) !== "undefined" &&
-          ENGINE.scene.children[i].selfremove == true) {
-          ENGINE.scene.remove(ENGINE.scene.children[i]);
-        }
-      }
-      */
+      //######### REMOVES SELFREMOVE ####################     
       var removeobjects = new Array();
       if (typeof (ENGINEOBJ) !== 'undefined' &&
         typeof (ENGINEOBJ.scene) !== 'undefined' && typeof (ENGINEOBJ.scene.traverse) == 'function')
@@ -90,13 +90,27 @@ var ENGINE = {
           removeobjects[i].parent.remove(removeobjects[i]);
         ENGINEOBJ.clearObj(removeobjects[i]);
       }
+      //######### CURSOR FOLOW ################
+      if (this.ortho.cursorGroup != null) {
+        var cbound = this.canvObj.getBoundingClientRect();
+        /*var cw = ((((cbound.right - cbound.left) * +(this.mousePos.x)) + (cbound.right - cbound.left)) / 2) + 
+        cbound.left;
+        var ch = ((((cbound.bottom - cbound.top) * -(this.mousePos.y)) + (cbound.bottom - cbound.top)) / 2) + 
+        cbound.top;
+        $('#cursor').css({ 'left': cw + 'px', 'top': ch + 'px' })*/
+        //var div=ENGINE.canvObj.width*ENGINE.canvObj.height;
+        var cx=(this.canvObj.width/600)*this.mousePos.x;
+        var cy=(this.canvObj.height/600)*this.mousePos.y;
+        this.ortho.cursorGroup.position.set(cx,cy,this.ortho.cursorGroup.position.z);
+      }
+
 
       if (ENGINEOBJ.CAM._camupdate !== null) ENGINEOBJ.CAM._camupdate(delta);
       ENGINE.Light.update(delta);
       ENGINEOBJ.Physic.updatePhysics(delta);
       SHADER.update(ENGINEOBJ, delta);
       ANIMATED.update(delta);
-      ENGINEOBJ.raycaster.setFromCamera(ENGINEOBJ.mouse, ENGINEOBJ.camera);
+      ENGINEOBJ.raycaster.setFromCamera(ENGINEOBJ.mousePos, ENGINEOBJ.camera);
       ENGINEOBJ.debugobjcts();
       ENGINE.GAME.update(delta);
       if (typeof (onRender) == 'function') onRender(delta);
@@ -108,7 +122,7 @@ var ENGINE = {
   clearObj: function (obj) {
     Object.keys(obj).forEach((key) => {
       // Recursively call dispose() if possible.
-      if (obj[key] && obj[key]!=null && typeof obj[key].dispose === 'function') {
+      if (obj[key] && obj[key] != null && typeof obj[key].dispose === 'function') {
         obj[key].dispose();
       }
       obj[key] = null;
@@ -127,10 +141,29 @@ var ENGINE = {
     }
   },
 
+  
+  mouseShow:function(cursor){    
+    ENGINE.scene2.clear();
+    if(typeof(cursor)=='undefined' || cursor==null){
+      $('*').css({cursor:"default"});
+    }else{    
+      $('*').css({cursor:"none"}); 
+      this.ortho.cursorGroup=new THREE.Group();
+      const texture=LOADER.textureLoader.load( "./images/"+cursor);				
+      const material = new THREE.SpriteMaterial( { map: texture } );
+      this.ortho.cursor = new THREE.Sprite( material );
+      this.ortho.cursorGroup.add(this.ortho.cursor);
+      this.ortho.cursorGroup.scale.set(0.07,0.07,1);
+      this.ortho.cursorGroup.position.z=-0.01;
+      this.ortho.cursor.position.set(0.5,-0.5,0);
+      ENGINE.scene2.add(this.ortho.cursorGroup); 
+    }        
+  },
+
 
   create: function (url, divObj, width, height, callback) {
     ENGINE.url = url;
-    if(typeof(width)=='undefined' || typeof(height)=='undefined'){//fullsreem
+    if (typeof (width) == 'undefined' || typeof (height) == 'undefined') {//fullsreem
       width = document.body.clientWidth;
       height = document.body.clientHeight;
     }
@@ -156,6 +189,7 @@ var ENGINE = {
         Ammo = AmmoLib;//Ammo Loaded
         ENGINE.divObj = divObj;
         ENGINE.clock = new THREE.Clock();
+        //### 3d ###
         ENGINE.scene = new THREE.Scene();
         ENGINE.camera = new THREE.PerspectiveCamera(
           45,
@@ -164,7 +198,19 @@ var ENGINE = {
           5000
         );
         ENGINE.camera.up = new THREE.Vector3(0, 1, 0);
+        ENGINE.camera.position.x = 0;
+        ENGINE.camera.position.y = 0;
+        ENGINE.camera.position.z = 0;
+        ENGINE.camera.lookAt(new THREE.Vector3(0, 0, -1));
+        //### 2d #
+        ENGINE.scene2 = new THREE.Scene();
+        ENGINE.scene2.background=null;
+        ENGINE.camera2 = //new THREE.OrthographicCamera( - width / 2, width / 2, height / 2, - height / 2, 1, 10 );
+        new THREE.PerspectiveCamera( 35, width / height, 0.1, 100 );				
+				ENGINE.camera2.position.z = 1.78;
+        //### renderer
         ENGINE.renderer = new THREE.WebGLRenderer({ antialias: false });
+        ENGINE.renderer.alpha=true;
         ENGINE.renderer.setPixelRatio(window.devicePixelRatio);
         //ENGINE.renderer.setClearColor( new THREE.Color(null) );
         //Create a WebGLRenderer and turn on shadows in the renderer
@@ -176,17 +222,15 @@ var ENGINE = {
             width,
             height
           );
-        //ENGINE.renderer.autoClear = false;
+        ENGINE.renderer.autoClear = false;
+        ENGINE.renderer.preserveDrawingBuffer=true;
         THREE.Cache.enabled = true;
-        ENGINE.camera.position.x = 0;
-        ENGINE.camera.position.y = 0;
-        ENGINE.camera.position.z = 0;
-        ENGINE.camera.lookAt(new THREE.Vector3(0, 0, -1));
         ENGINE.canvObj = ENGINE.renderer.domElement;
         ENGINE.divObj[0].appendChild(ENGINE.canvObj);
-       // window.addEventListener('mousemove', ENGINE._onMouseMove, false);
+        // window.addEventListener('mousemove', ENGINE._onMouseMove, false);
         $(window).off("mousemove").on("mousemove", ENGINE._onMouseMove);
         $(window).off("keydown").on("keydown", ENGINE._onKeyDown);
+        $(window).off("resize").on("resize", ENGINE._onWindowResize );
         requestAnimationFrame(ENGINE.onUpdate); //timer update delta
         //INITIALIZERS
         ENGINE.Physic.initPhysics(); //initialize physics
@@ -208,8 +252,8 @@ var ENGINE = {
 
   clear: function () {
     $('#playdiv').hide();
-    ENGINE.GAME._fullloaded= false;
-    ENGINE.GAME._completeloaded= false;
+    ENGINE.GAME._fullloaded = false;
+    ENGINE.GAME._completeloaded = false;
     HELPER.hideTransform();
     ENGINE.EDITORM._tiles = null;
     ENGINE.EDITORM._tileselected = null;
@@ -255,6 +299,7 @@ var ENGINE = {
 
 
 
+
   clearThree: function (obj) {
     while (obj.children.length > 0) {
       ENGINE.clearThree(obj.children[0]);
@@ -274,9 +319,9 @@ var ENGINE = {
     }
   },
 
-  adminPopup:function(){
+  adminPopup: function () {
     ENGINE.DIALOG.reset();
-    var data=`
+    var data = `
     <div id="EEDITOR">
     <br>Engine Editor<br><br>
     <input type="button" value="Object" onclick="ENGINE.EDITORT.show();" />    
@@ -288,7 +333,20 @@ var ENGINE = {
     <input type="button" value="CONF" onclick="ENGINE.ADM.show();" />     
     </div>
     `;
-    ENGINE.DIALOG.popup(data,'Editor',true);
+    ENGINE.DIALOG.popup(data, 'Editor', true);
+  },
+
+  _onWindowResize:function(){
+    const width = ENGINE.divObj.width();
+    const height = ENGINE.divObj.height();
+    ENGINE.camera.aspect = width / height;
+    ENGINE.camera.updateProjectionMatrix();
+    ENGINE.camera2.left = - width / 2;
+    ENGINE.camera2.right = width / 2;
+    ENGINE.camera2.top = height / 2;
+    ENGINE.camera2.bottom = - height / 2;
+    ENGINE.camera2.updateProjectionMatrix();    
+    ENGINE.renderer.setSize( width, height );
   },
 
   _onKeyDown: function (event) {
@@ -300,9 +358,9 @@ var ENGINE = {
   _onMouseMove: function (event) {
     // calculate mouse position in normalized device coordinates
     var cbound = ENGINE.canvObj.getBoundingClientRect();
-    ENGINE.mouse.x =
+    ENGINE.mousePos.x =
       ((event.clientX - cbound.left) / (cbound.right - cbound.left)) * 2 - 1;
-    ENGINE.mouse.y =
+    ENGINE.mousePos.y =
       -((event.clientY - cbound.top) / (cbound.bottom - cbound.top)) * 2 + 1;
   },
 

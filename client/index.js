@@ -64,16 +64,14 @@ function firstLoad() {
   $(document).tooltip({ track: true });
   //SOCKET.secure=startCONFIG.websock_secure;
   ENGINE.login=startCONFIG.default_login;
-  ENGINE.pass=startCONFIG.default_pass;
-  //ENGINE.create('http://192.168.0.2/',$('#myc'), 600, 340);
+  ENGINE.pass=startCONFIG.default_pass;  
   var myul=window.location.href.replace('index.html','');
   ENGINE.create(myul,$('#myc'),600,340,()=>{ 
     var msg = '<input type="text" id="DIALOGLOGIN" placeholder="LOGIN" value="'+ENGINE.login+'"><br>'+    
     '<input type="password" id="DIALOGPASS" placeholder="PASSWORD" value="'+ENGINE.pass+'"><br><br>';    
     $('#myc').append(
       `<div id="playdiv" align=center style="color:white;position: absolute;left: 50%;top: 20%;">          
-      Login:<br>
-      `+msg+`      
+      Login:<br>`+msg+`      
       <input type="button" value="Play" onclick="ENGINE.GAME.play();" />  
       <br><i style="color: #5f6c7b;font-size: 12px;">
         Working on progress...</i></div>`

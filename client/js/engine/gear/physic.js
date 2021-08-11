@@ -119,6 +119,7 @@ ENGINE.Physic = {
     shape.calculateLocalInertia(mass, localInertia);
     const rbInfo = new Ammo.btRigidBodyConstructionInfo(mass, motionState, shape, localInertia);
     const physicbody = new Ammo.btRigidBody(rbInfo);
+    physicbody.setFriction(0.8);
 
     physicbody.setAngularFactor(new Ammo.btVector3(0.0, 0.0, 0.0));
     //physicbody.setLinearFactor(new  Ammo.btVector3(1, 0, 1));
@@ -285,12 +286,29 @@ ENGINE.Physic = {
       objPhys.fakeobj.position.copy(position);
       objPhys.fakeobj.quaternion.copy(rotation);
 
+      var isNPC=false;
       var login = objPhys.fakeobj.name;
       var speemov = objPhys.move.speed;
       var playervar = ENGINE.GAME._players[login];
-      if(!playervar)playervar=ENGINE.GAME._npcData[login]
+      if(!playervar){
+        playervar=ENGINE.GAME._npcData[login];
+        isNPC=true;
+      }
       var playerobj = null;
       var running = false;
+      
+      //if(playervar && playervar.onAction==true)return;
+
+      var actRun='run';
+      var actIdle='idle';
+      var actWalk='walk';
+      for(var i=0;i<ENGINE.GAME._itenslist[login].itens.length;i++){
+        if(ENGINE.GAME._itenslist[login].itens[i].type==2){
+          actRun='swrun';
+          actIdle='idlearmed';
+          actWalk='swwalk';
+        }
+      }
 
       if (typeof (playervar) != 'undefined') {
         if (playervar.speed){
@@ -316,12 +334,18 @@ ENGINE.Physic = {
         objPhys.move.ACTIVE = false;
         //##### ANIMATION AREA for IDLE /stop
         if (playerobj) {
-          ANIMATED.change(login, 'idle', 10);
+          ANIMATED.change(login, actIdle, 10);
           HELPER.footStepSound(login,'snstep','stop');          
         }              
       } else {                              //se movendo para a direcao
         //objPhys.setLinearFactor(new  Ammo.btVector3(1, 0, 1));
         //objPhys.setLinearFactor(new  Ammo.btVector3(1, 1, 1));      
+
+        if(distance==objPhys.move.distance){//stuck
+          if(isNPC==true){
+            ENGINE.GAME.playerAction(login,{jump:true});
+          }
+        }
 
         //##### ANIMATION AREA for walk
         if(playervar.speedExtra>0 && distance<2){
@@ -329,12 +353,14 @@ ENGINE.Physic = {
           running=false;
         }
 
-        if (playerobj && running == true && playerobj.active != 'run') {
-          ANIMATED.change(login, 'run', 10);
+        
+     
+        if (playerobj && running == true && playerobj.active.includes(actRun)!=true) {
+          ANIMATED.change(login, actRun, 10);
         }
         if (playerobj && running == false){          
-          if(playerobj.active != 'walk') {
-          ANIMATED.change(login, 'walk', 10);
+          if(playerobj.active.includes(actWalk)!=true) {
+          ANIMATED.change(login, actWalk, 10);
           HELPER.footStepSound(login,'snstep','play');
           }
           //if(distance<1){

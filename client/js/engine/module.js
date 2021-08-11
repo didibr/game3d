@@ -34,6 +34,7 @@ import { OrbitControls } from '/js/build/jsm/controls/OrbitControls.js';
 import { OBJLoader } from '/js/build/jsm/loader/OBJLoader.js';
 //import { MTLLoader } from '/js/loader/MTLLoader.js';
 import { FBXLoader } from '/js/build/jsm/loader/FBXLoader.js';
+import { CSS2DRenderer, CSS2DObject } from '/js/build/jsm/renderers/CSS2DRenderer.js';
 
 
 
@@ -41,12 +42,19 @@ import { FBXLoader } from '/js/build/jsm/loader/FBXLoader.js';
 //var _objloader = new OBJLoader();
 //var _textureloader = new THREE.TextureLoader();
 window.THREE = THREE;
-var audioListener=null;
-
+var audioListener = null;
 window.CONTROLS = null;
-window.LISTENER = async ()=>{
-  if(typeof(audioListener)=='undefined' || audioListener==null){
-    audioListener=new THREE.AudioListener();
+
+window.RENDERER={
+  css:function(obj){
+    return new CSS2DObject( obj );
+  },
+  renderer:CSS2DRenderer
+}
+
+window.LISTENER = async () => {
+  if (typeof (audioListener) == 'undefined' || audioListener == null) {
+    audioListener = new THREE.AudioListener();
     audioListener.setMasterVolume(0);
     ENGINE.camera.add(audioListener);
     //console.log('create listener');
@@ -79,31 +87,31 @@ window.OrbitControl = {
 }
 
 window.ANIMATED = {
-  cname: class {    
-        name = null;
-        clip =null;
-      },
+  cname: class {
+    name = null;
+    clip = null;
+  },
   _variable: class {
-    active = '';
+    active = [];
     mixer = null;
     action = null;
     object = null;
     shape = null;
     bones = null;
-    sca =null; //last applyed scale    
+    sca = null; //last applyed scale    
   },
-  _animations:null,
+  _animations: null,
   _data: new Array(),
   _changes: new Array(),//changes in use
   _loaded: new Array(), //already loaded models
 
   //USE TO UPDATE ANIMATIONS ON JSON FILE - on DEVELOPMENT
-  updateAnimations:function(modelUrl){
-    ANIMATED.load(modelUrl,'model', 0.985,
+  updateAnimations: function (modelUrl) {
+    ANIMATED.load(modelUrl, 'model', 0.985,
       function (mobj) {
-        mobj.visible=false;
+        mobj.visible = false;
         //ANIMATED._animations=mobj.animations;
-        var data=JSON.stringify(mobj.animations);
+        var data = JSON.stringify(mobj.animations);
         //var url = ENGINE.url + ENGINE.conf.dir.upload + '?login=' + ENGINE.login + '&pass=' + ENGINE.pass;
         console.log(data);
         //HELPER.simpleuploadData(url, 'SAVANIMATIONS', data, function () {
@@ -112,65 +120,88 @@ window.ANIMATED = {
       });
   },
 
-  _finishload: function (object, fbx, name, scale, callbak,extracfg) {
-    if (typeof (scale) == 'undefined') scale = 0.985;    
-    object.scale.subScalar(scale);    
+  _finishload: function (object, fbx, name, scale, callbak, extracfg) {
+    if (typeof (scale) == 'undefined') scale = 0.985;
+    object.scale.subScalar(scale);
     ANIMATED._data[name] = new ANIMATED._variable();
     ANIMATED._data[name].object = object;
     ANIMATED._data[name].shape = ENGINE.Physic.createRigidSkin(extracfg);
-    ANIMATED._data[name].shape.group.login=name;
+    ANIMATED._data[name].shape.group.login = name;
     ANIMATED._data[name].mixer = new THREE.AnimationMixer(object);
-    ANIMATED._data[name].sca=scale;    
+    ANIMATED._data[name].sca = scale;
     ANIMATED._data[name].action = new Array();
-    ANIMATED._data[name].bones=new Array();
-    var audio=new THREE.Object3D();
-    ANIMATED._data[name].audio=audio;   
+    ANIMATED._data[name].bones = new Array();
+    var audio = new THREE.Object3D();
+    ANIMATED._data[name].audio = audio;
 
-    
+
     //console.log(ANIMATED._animations.length);
-    object.animations=new Array();
+    object.animations = new Array();
     for (var i = 0; i < ANIMATED._animations.length; i++) {
-      var anim=THREE.AnimationClip.parse(ANIMATED._animations[i]);
+      var anim = THREE.AnimationClip.parse(ANIMATED._animations[i]);
       object.animations.push(anim);
     }
 
-    var firstname = null; 
+    var firstname = null;
     for (var i = 0; i < object.animations.length; i++) {
-      var clip = object.animations[i].name;      
+      var clip = object.animations[i].name;
+      var clipAnim=ANIMATED._data[name].mixer.clipAction(object.animations[i]);
       clip = clip.split('|');
       clip = clip[clip.length - 1];
-      if (firstname == null || clip=='idle') firstname = clip;
-      ANIMATED._data[name].action[clip] =
-        ANIMATED._data[name].mixer.clipAction(object.animations[i]);            
-      ANIMATED._data[name].action[clip].togle=function(){
-        ANIMATED.swap(name,this);
+      if (firstname == null || clip == 'idle') firstname = clip;
+      ANIMATED._data[name].action[clip] = clipAnim;       
+      ANIMATED._data[name].action[clip].togle = function () {
+        ANIMATED.swap(name, this);
+      }
+      switch (clip) {
+        //unique
+        case 'swdie':  break;
+        case 'tpose':  break;
+        //legworks
+        case 'swwalk':  break;
+        case 'idledie':  break;
+        case 'idle':  break;
+        case 'idlearmed':  break;
+        case 'run':  break;
+        case 'swrun':  break;
+        case 'walk':  break;
+        //uperbody
+        case 'swwithdraw':  break;
+        case 'archaim':  break;
+        case 'swatack': clipAnim.timeScale=2; break;
+        case 'swdraw':  break;
+        case 'punch':  break;
+        case 'drop':  break;
+        //extra
+        case 'swimpact':  break;
+        case 'jump':  clipAnim.timeScale=1.5;break;
       }
     }
     if (firstname !== null) ANIMATED._data[name].action[firstname].play();
-    ANIMATED._data[name].active = firstname;
-   
+    ANIMATED._data[name].active = [];
+
     object.traverse(function (child) {
       //try{
       if (child.isMesh) {
         child.castShadow = true;
         child.receiveShadow = true;
-        child.material.transparent=false;   
-        if(child.material.specular)     
-        child.material.specular.setScalar(0.2);
+        child.material.transparent = false;
+        if (child.material.specular)
+          child.material.specular.setScalar(0.2);
       }
-      if(child.isBone && child.name){
-        var boneName=child.name;
-        if(boneName.startsWith('mixamorig')==true)
-        boneName=boneName.substr('mixamorig'.length,boneName.length);
-        while(isNaN(boneName[0])==false){
-          boneName=boneName.substr(1,boneName.length)
-        }        
-        ANIMATED._data[name].bones[boneName]=child;
-      }    
-    //}catch{e}{
+      if (child.isBone && child.name) {
+        var boneName = child.name;
+        if (boneName.startsWith('mixamorig') == true)
+          boneName = boneName.substr('mixamorig'.length, boneName.length);
+        while (isNaN(boneName[0]) == false) {
+          boneName = boneName.substr(1, boneName.length)
+        }
+        ANIMATED._data[name].bones[boneName] = child;
+      }
+      //}catch{e}{
       //window.TT=child;
       //console.log('Error 140',name,fbx);
-    //}      
+      //}      
     });
     object.add(audio);
 
@@ -179,11 +210,11 @@ window.ANIMATED = {
     object.position.y = shapepos.y - 1.30;
     ANIMATED._data[name].shape.attach(object);
     ENGINE.Physic.bodyTeleport(ANIMATED._data[name].shape, shapepos.add(new THREE.Vector3(0, 4, 0)));
-    if (!ANIMATED._loaded[fbx]) ANIMATED._loaded[fbx] = { obj: object, audio:audio, sca: scale };
+    if (!ANIMATED._loaded[fbx]) ANIMATED._loaded[fbx] = { obj: object, audio: audio, sca: scale };
     if (typeof (callbak) == 'function') callbak(object);
   },
 
-  
+
 
   _preload: function (fbx, name, scale, callbak, extracfg) {
     if (typeof (ANIMATED._data[name]) !== 'undefined') {
@@ -192,7 +223,7 @@ window.ANIMATED = {
       return;
     }
     if (ANIMATED._loaded[fbx]) {
-      
+
       //Clone existent same Model/Skelleton and Animations, rescale and position to default      
       ANIMATED._loaded[fbx].obj.remove(ANIMATED._loaded[fbx].audio);
       var object = SkeletonUtils.clone(ANIMATED._loaded[fbx].obj);
@@ -201,26 +232,26 @@ window.ANIMATED = {
       for (var i = 0; i < ANIMATED._loaded[fbx].obj.animations.length; i++) {
         object.animations.push(ANIMATED._loaded[fbx].obj.animations[i].clone());
       }
-      object.position.set(0,0,0);
-      object.quaternion.set(0,0,0,1);
-      ANIMATED._finishload(object, fbx, name, scale, callbak,extracfg);
+      object.position.set(0, 0, 0);
+      object.quaternion.set(0, 0, 0, 1);
+      ANIMATED._finishload(object, fbx, name, scale, callbak, extracfg);
     } else {
       LOADER.fbxloader.load(fbx, function (object) {
-        ANIMATED._finishload(object, fbx, name, scale, callbak,extracfg);
+        ANIMATED._finishload(object, fbx, name, scale, callbak, extracfg);
       });
     }
   },
 
 
   load: function (fbx, name, scale, callbak, extracfg) {
-    if(ANIMATED._animations==null){
-      $.getJSON( ENGINE.url+'animations.json', function( data ) {
-        ANIMATED._animations=data;
+    if (ANIMATED._animations == null) {
+      $.getJSON(ENGINE.url + 'animations.json', function (data) {
+        ANIMATED._animations = data;
         ANIMATED._preload(fbx, name, scale, callbak, extracfg);
-      });     
-    }else{
+      });
+    } else {
       ANIMATED._preload(fbx, name, scale, callbak, extracfg);
-    } 
+    }
   },
 
 
@@ -234,14 +265,20 @@ window.ANIMATED = {
     }
     for (var i = 0; i < ANIMATED._changes.length; i++) {
       var data = ANIMATED._changes[i];
-      var playw = ANIMATED._data[data.name].action[data.clip].weight;
+      var playw = 0;
+      if (typeof (data.clip) != 'undefined' || data.clip != null){
+        playw = ANIMATED._data[data.name].action[data.clip].weight;
+      }        
       playw = playw - (delta * data.time);
       if (playw <= 0) {
         playw = 0;
-        ANIMATED._data[data.name].active = data.newp;
-        ANIMATED._data[data.name].action[data.clip].weight = playw;
-        ANIMATED._data[data.name].action[data.clip].stop();
+        if (typeof (data.clip) != 'undefined' || data.clip != null) {
+          ANIMATED._data[data.name].action[data.clip].weight = playw;
+          ANIMATED._data[data.name].action[data.clip].stop();
+        }
+        ANIMATED._data[data.name].active[data.type] = data.newp;
         ANIMATED._data[data.name].action[data.newp].weight = 1;
+        this.deanimateType(data.name,data.newp,false);
         ANIMATED._changes.splice(i, 1);
         break;
       } else {
@@ -251,11 +288,60 @@ window.ANIMATED = {
     }
   },
 
-  swap: function (name,animation) {    
-      var clip = animation._clip.name;
-      clip = clip.split('|');
-      clip = clip[clip.length - 1];
-      ANIMATED.change(name,clip);
+  deanimateType:function(name,newpose,selftoo){
+    if(typeof(ANIMATED._data[name])=='undefined'){
+      console.warn('deanimateType no animation for ',name);
+      return;
+    }
+    var ctype=this.getType(newpose);
+    for (var i = 0; i<Object.keys(ANIMATED._data[name].action).length;i++) {
+      var cname = Object.keys(ANIMATED._data[name].action)[i];      
+      if(ctype==this.getType(cname)){
+        if(cname!=newpose){
+          ANIMATED._data[name].action[cname].weight=0;
+          ANIMATED._data[name].action[cname].stop();
+        }else if(selftoo==true){
+          ANIMATED._data[name].action[cname].weight=0;
+          ANIMATED._data[name].action[cname].stop();
+          ANIMATED._data[name].active[ctype]='tpose';          
+        }        
+      }      
+    }
+  },
+
+  getType: function (newpose) {
+    var atype = 4;
+    switch (newpose) {
+      //unique
+      case 'swdie': atype = 0; break;
+      case 'tpose': atype = 0; break;
+      //legworks
+      case 'swwalk': atype = 1; break;
+      case 'idledie': atype = 1; break;
+      case 'idle': atype = 1; break;
+      case 'idlearmed': atype = 1; break;
+      case 'run': atype = 1; break;
+      case 'swrun': atype = 1; break;
+      case 'walk': atype = 1; break;
+      //uperbody
+      case 'swwithdraw': atype = 2; break;
+      case 'archaim': atype = 2; break;
+      case 'swatack': atype = 2; break;
+      case 'swdraw': atype = 2; break;
+      case 'punch': atype = 2; break;
+      case 'drop': atype = 2; break;
+      //extra
+      case 'swimpact': atype = 3; break;
+      case 'jump': atype = 3; break;
+    }
+    return atype;
+  },
+
+  swap: function (name, animation) {
+    var clip = animation._clip.name;
+    clip = clip.split('|');
+    clip = clip[clip.length - 1];
+    ANIMATED.change(name, clip);
     /*var clipname = ANIMATED._data[name].active;
     if (typeof (ANIMATED._data[name]) == 'undefined' ||
       typeof (ANIMATED._data[name].action[newpose]) == 'undefined') {
@@ -271,15 +357,25 @@ window.ANIMATED = {
 
   change: function (name, newpose, speed) {
     if (typeof (speed) == 'undefined') speed = 1;
-    var clipname = ANIMATED._data[name].active;
+    var ctype = this.getType(newpose);
+    var clipname = ANIMATED._data[name].active[ctype];
     if (typeof (ANIMATED._data[name]) == 'undefined' ||
       typeof (ANIMATED._data[name].action[newpose]) == 'undefined') {
       console.warn('Animation or clip not found', name, newpose);
       return;
     }
-    ANIMATED._data[name].action[newpose].weight = 0;
+    //ANIMATED._data[name].action[newpose].weight = 0;
     ANIMATED._data[name].action[newpose].play();
-    ANIMATED._changes.push({ name: name, clip: clipname, newp: newpose, time: speed });
+    var onlist=false;
+    for (var i = 0; i < ANIMATED._changes.length; i++) {
+      var data = ANIMATED._changes[i];
+      if(data.name==name && data.clip==clipname && data.type==ctype && data.newp==newpose && data.time==speed){
+        onlist=true;
+        break;
+      }
+    }
+    if(onlist==false && clipname!=newpose)
+    ANIMATED._changes.push({ name: name, clip: clipname, type: ctype, newp: newpose, time: speed });
   },
 
   clear: function () {
@@ -294,11 +390,11 @@ window.ANIMATED = {
           ANIMATED._data[modelname].mixer.uncacheClip(clip);
         }
         ANIMATED._data[modelname].mixer.uncacheRoot(ANIMATED._data[modelname].object);
-        ENGINE.Physic.removeObj(ANIMATED._data[modelname].shape);        
+        ENGINE.Physic.removeObj(ANIMATED._data[modelname].shape);
         ENGINE.scene.remove(ANIMATED._data[modelname].object);
       }
     }
-    
+
   }
 
 
@@ -484,7 +580,8 @@ window.SHADER = {
         ENGINE.renderer.render(ENGINE.scene, ENGINE.camera);
       }
       return;
-    }
+    }    
+
     if (this.bloomComposer == null || typeof (this.materials) == 'undefined') return;
 
     if (typeof (this.materials.LAVA) !== 'undefined') {
@@ -511,6 +608,9 @@ window.SHADER = {
     ENGINE.scene.traverse(this.restoreMaterial);
 
     this.finalComposer.render();
+
+    ENGINE.renderer.clearDepth();
+    ENGINE.renderer.render( ENGINE.scene2, ENGINE.camera2 );        
   },
 
   makevertex: function (texture) {
@@ -616,6 +716,8 @@ window.SHADER = {
     this.finalComposer.addPass(this.filters.FXAA);
 
 
+    //const renderScene2 = new RenderPass(ENGINE.scene2, ENGINE.camera2);    
+    //this.finalComposer.addPass(renderScene2);
   },
 
   darkenNonBlured: function (obj) {
