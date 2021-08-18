@@ -21,7 +21,7 @@ const object = function (val) {
  * @private
  */
 const plainObject = function (val) {
-  return Object.prototype.toString.call(val) === '[object Object]';
+  return object(val) && Object.prototype.toString.call(val) === '[object Object]';
 };
 
 /**
@@ -45,16 +45,7 @@ const bool = function (val) {
  * @private
  */
 const buffer = function (val) {
-  return val instanceof Buffer;
-};
-
-/**
- * Is this value a Uint8Array or Uint8ClampedArray object?
- * @private
- */
-const uint8Array = function (val) {
-  // allow both since Uint8ClampedArray simply clamps the values between 0-255
-  return val instanceof Uint8Array || val instanceof Uint8ClampedArray;
+  return object(val) && val instanceof Buffer;
 };
 
 /**
@@ -78,7 +69,7 @@ const number = function (val) {
  * @private
  */
 const integer = function (val) {
-  return Number.isInteger(val);
+  return number(val) && val % 1 === 0;
 };
 
 /**
@@ -94,14 +85,14 @@ const inRange = function (val, min, max) {
  * @private
  */
 const inArray = function (val, list) {
-  return list.includes(val);
+  return list.indexOf(val) !== -1;
 };
 
 /**
  * Create an Error with a message relating to an invalid parameter.
  *
- * @param {string} name - parameter name.
- * @param {string} expected - description of the type/value/range expected.
+ * @param {String} name - parameter name.
+ * @param {String} expected - description of the type/value/range expected.
  * @param {*} actual - the value received.
  * @returns {Error} Containing the formatted message.
  * @private
@@ -119,7 +110,6 @@ module.exports = {
   fn: fn,
   bool: bool,
   buffer: buffer,
-  uint8Array: uint8Array,
   string: string,
   number: number,
   integer: integer,

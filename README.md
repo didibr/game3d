@@ -50,10 +50,8 @@ in '/client/index.js' line 3
 - Jquery.ui
 
 #### to do for now
-- calibrate dinamic camera
-- audio point and ambient fixes
-- fix some glitch on ground with physic body walk/run
 - implement actor live movimentation and contact response
+- v2
 
 
 

@@ -1,5 +1,5 @@
 /*Rquerid Packages
-formidable - websocket - sharp - ws
+npm install formidable websocket sharp@0.23.2 ws
 */
 
 const HELPER = require('./server/helper');
