@@ -73,10 +73,13 @@
       </div>
 
       <div id="Ttabs-3">
-        sound on pick<br>
-        sound on drop<br>
-        sound on use<br>
-        sound on split<br>        
+        <br>
+        <div align="left">
+          <p class="pLeft">Pick:</p><select id='sndpick' class="snd"></select><br>
+          <p class="pLeft">Drop:</p><select id='snddrop' class="snd"></select><br>
+          <p class="pLeft">Use:</p><select id='snduse' class="snd"></select><br>
+          <p class="pLeft">Split:</p><select id='sndsplit' class="snd"></select><br>          
+        </div>      
       </div>
     </div>
   </div>
@@ -134,9 +137,12 @@
     <p class="pSpace">Class:</p>
     <select id="type" style="width:120px">
       <option value="0">Consumable</option>
-      <option value="1">Weapon</option>
-      <option value="2">Armor</option>
+      <option value="1">Hand Weapon</option>
+      <option value="2">Body Armor</option>
       <option value="3">Key</option>
+      <option value="4">Hand Shield</option>
+      <option value="5">Leg Atatchment</option>
+      <option value="6">Helmet</option>
     </select><br>
     <p class="pSpace">Use on Pick:</p>
     <select id="usable" style="width:120px">

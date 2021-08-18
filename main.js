@@ -13,7 +13,7 @@ const sharp = require('sharp');
 //ADMIN LOGIN TO EDITING CREATING
 const ADMIN = 'didi';
 const PASS = '1234';
-const WebPort = 8080;
+const WebPort = 7000;
 
 const dir = {
   audio: 'audio/',

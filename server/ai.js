@@ -190,11 +190,30 @@ module.exports = {
     fs.writeFile(playerconfig,
       JSON.stringify({
         pass: message.DATA.pass1,
-        map: AI.INITIAL.MAP, entity: AI.INITIAL.ENTITY, save: AI.INITIAL.SAVE
+        map: AI.INITIAL.MAP,
+        entity: AI.INITIAL.ENTITY,
+        save: AI.INITIAL.SAVE,
+        itens: [], //equiped
+        drops: [], //inventory
+        attr: {
+          exp: 0,
+          moviment: 2,
+          agressive: false,
+          lvl: 1,
+          hp: 100,
+          str: 1,
+          dex: 1,
+          qtd: 1,
+          areaspaw: 0.1,
+          areachase: 0.1,
+          revive: false,
+          revivetime: 30
+        }
       }), function (err) {
         if (err) { console.log('AI._ONNEWLOGIN', err); return; }
       });
-    this.sendData(message.ID, { NEWLOGINVALID: { login: message.DATA.login, pass: message.DATA.pass1 } });
+    console.log('NEWONE');
+    this.sendData(message.ID, { NEWLOGVALID: { login: message.DATA.login, pass: message.DATA.pass1 } });
   },
 
   _ONGETPLAYERCONFIG: function (message) { //PLAYER CONNECTED AND LOGUED
@@ -226,6 +245,8 @@ module.exports = {
             AI.con[message.ID].userdata.login = message.DATA.login;
           }
           var map = AI.con[message.ID].userdata.map;
+          AI.completeItemAttr(AI.con[message.ID].userdata.itens);
+          AI.completeItemAttr(AI.con[message.ID].userdata.drops);
           AI.broadCastData(message.ID, { VALIDLOGIN: AI.con[message.ID].userdata }); //broadcast all for this user
           AI.sendOnlinePLayers(message.ID); //send online players to this new one          
           //AI._startAi(map);//have atleast one player to start AI (replaced by loadlive)
@@ -374,39 +395,94 @@ module.exports = {
     var login = AI.con[message.ID].userdata.login;
     var pos = new AI.THREE.Vector3(message.DATA.pos.x, message.DATA.pos.y, message.DATA.pos.z);
     //### PLAYER USING ATTACK ###
-    if (message.DATA.action.attack && message.DATA.action.attack == true) {      
-      var nearActors = AI.getNearActors(map, pos, message.DATA.qua,message.DATA.near);
+    if (message.DATA.action.attack && message.DATA.action.attack == true) {
+      var nearActors = AI.getNearActors(map, pos, message.DATA.qua, message.DATA.near);
       if (Object.keys(nearActors).length > 0) { //hit at least one
         console.log('HIT', Object.keys(nearActors));
         var targets = {};
         for (var i = 0; i < Object.keys(nearActors).length; i++) {
           var targetname = Object.keys(nearActors)[i];
           var target = nearActors[targetname];
-          //console.log('tt', target);
-          if (!target.chase) target.chase = login;
-          if (!target.agro) target.agro = [];
-          target.agro.push(login);
-          var newhp = AI.calculateDamage(map, login, targetname);
-          if (newhp !== null) target.attr.hp = newhp;
-          if (target.attr.hp > 0) {
-            targets[targetname] = { hp: target.attr.hp }
-          } else {
-            //died
+          if (!target.died || target.died != 0) { //do noting for died
+            if (!target.chase) target.chase = login;
+            if (!target.agro) target.agro = [];
+            target.agro.push(login);
+            var data = AI.calculateDamage(map, login, targetname);
+            if (target.attr.hp > 0) {
+              targets[targetname] = { hp: target.attr.hp }
+            } else {
+              target.chase = null;
+              target.agro = [];
+              target.died = target.attr.revivetime; //ticks to revive
+              this.broadCastData(message.ID, { KILL: { login: login, attr: data.a.attr, killed: targetname } });
+            }
           }
-
-
         }
-        //this.broadCastData(message.ID, { ATACK: { login: login, targets: targets } });
+        this.broadCastData(message.ID, { ATACK: { login: login, targets: targets } });
       }
     }
   },
 
   calculateDamage: function (map, attackerLogin, receiverLogin) {
+    //console.log('calc', attackerLogin, receiverLogin);
     var atacker = AI.findlogin(map, attackerLogin);
-    var receive = AI.findlogin(map, receiverLogin);
-    //if(atacker==null || receive==null)return null;
-    //var currentHp=atacker.attr.hp;
-   // console.log('calc', receiverLogin, receive);
+    var receive = AI.findlogin(map, receiverLogin);    
+    //ataquer
+    var aStr = atacker.attr.str;
+    var aLvl = atacker.attr.lvl;
+    var aDex = atacker.attr.dex;
+    var aLif = 0;
+    var aDmg = 0;        
+
+    if (atacker.itens)
+      for (var i = 0; i < atacker.itens.length; i++) {
+        var iname = atacker.itens[i].name;
+        var idata = AI._itemDatabase[iname];        
+        aStr += idata.givestr;
+        aDex += idata.givedex;
+        aLif += idata.givelife;//lifesteal
+        aDmg += idata.givedmg;//extra damage
+      }
+     
+    //receiver
+    var rStr = receive.attr.str;
+    var rLvl = receive.attr.lvl;
+    var rDex = receive.attr.dex;
+    var rArmor = 0;
+    if (receive.itens)
+      for (var i = 0; i < receive.itens.length; i++) {
+        var iname = receive.itens[i].name;
+        var idata = AI._itemDatabase[iname];
+        rStr += idata.givestr;
+        rDex += idata.givedex;
+        rArmor += idata.givearmor;//extra defences
+      }
+    //calc    
+    var evade = parseInt((rDex * rLvl) - (aDex * aLvl));
+    var evadeChance = 1;
+    for (i = 0; i < evade; i++) {
+      var check = 1 - Math.random();
+      if (check < evadeChance) evadeChance = check;
+    }
+    
+    var damage = (aStr * aLvl) + aDmg - rArmor;
+    var damage = damage * evadeChance;
+    console.log(aStr,aLvl,aDmg,rArmor,damage,evadeChance);
+    //pass values
+    receive.attr.hp -= damage;
+    receive.attr.hp = parseFloat(receive.attr.hp.toFixed(3));
+    if (receive.attr.hp <= 0) { //killed      
+      receive.attr.hp = 0;
+      AI.addXP(atacker, receive.attr.lvl);
+    }
+    return { a: atacker, r: receive };
+  },
+
+  addXP: function (player, xp) {
+    if (isNaN(xp) == true) return;
+    player.attr.exp += parseInt(xp);
+    var lvl = Math.round((1 + Math.sqrt(1 + 8 * player.attr.exp)) / 2);
+    player.attr.lvl = lvl;
   },
 
   findlogin: function (map, login) {
@@ -427,14 +503,14 @@ module.exports = {
     return null;
   },
 
-  getNearActors: function (map, pos, qua,near) {
+  getNearActors: function (map, pos, qua, near) {
     var foundActors = {};
     if (!AI._activeMaps[map].npcData) return {};
     //console.log(near);
     for (var i = 0; i < Object.keys(near).length; i++) {
-      var lookfor=Object.keys(near)[i];
-      var activenpc=AI._activeMaps[map].npcData[lookfor];
-      if(activenpc){
+      var lookfor = Object.keys(near)[i];
+      var activenpc = AI._activeMaps[map].npcData[lookfor];
+      if (activenpc) {
         foundActors[lookfor] = activenpc;
       }
     }
@@ -452,6 +528,7 @@ module.exports = {
 
 
   completeItemAttr(itens) {
+    //console.log('i',itens);
     if (!itens || itens == null) return;
     for (var i = 0; i < itens.length; i++) {
       var name = itens[i].name;
@@ -492,9 +569,9 @@ module.exports = {
                 if (typeof (scenedata.entity) !== _UN) { //ADD NEW NPC 
                   //get data to next actions
                   var realpos = {
-                    x: ((10 * x) - 0.5) + scenedata.entity.box.pos.x,
+                    x: ((10 * x) - 0.5) + scenedata.entity.box.pos.x + 1,
                     y: scenedata.entity.box.pos.y,
-                    z: ((10 * y) - 0.5) + scenedata.entity.box.pos.z
+                    z: ((10 * y) - 0.5) + scenedata.entity.box.pos.z + 1
                   }
                   if (!AI._activeMaps[map].npcData[scenedata.name]) {
                     AI._activeMaps[map].npcData[scenedata.name] = {
@@ -506,7 +583,8 @@ module.exports = {
                       startpos: realpos, //center of area chase
                       startsqua: scenedata.entity.box.qua,
                     }
-                    AI.completeItemAttr(AI._activeMaps[map].npcData[scenedata.name].itens);
+                    AI.completeItemAttr(scenedata.entity.itens);
+                    AI.completeItemAttr(scenedata.entity.drops);
                   }
 
                 }
@@ -524,9 +602,10 @@ module.exports = {
                   //get data to next actions
                   if (AI._activeMaps[map].npcData[scenedata.name]) {
                     var moved = AI._activeMaps[map].npcData[scenedata.name];
-                    scenedata.entity.box.pos.x = moved.pos.x - (10 * x) - 0.5;
-                    scenedata.entity.box.pos.z = moved.pos.z - (10 * y) - 0.5;
+                    scenedata.entity.box.pos.x = moved.pos.x - (10 * x) - 0.5 + 1;
+                    scenedata.entity.box.pos.z = moved.pos.z - (10 * y) - 0.5 + 1;
                     scenedata.entity.box.qua = moved.qua;
+                    scenedata.entity.attr = AI._activeMaps[map].npcData[scenedata.name].attr;
                   }
                 }
               }
@@ -540,6 +619,7 @@ module.exports = {
   },
 
   _npcWalkUpdate: function (atributes, walktick, npcname, activenpc, map) {
+    if (activenpc.died && activenpc.died != 0) return;
     function newWalk(position, center, notrepass) {
       //position=new THREE.Vector3(position.x,position.y,position.z);
       center = new AI.THREE.Vector3(center.x, center.y, center.z);
@@ -556,9 +636,9 @@ module.exports = {
         return randompos;
       }
     }
-    function onCenter(poposition, center) {
+    function onCenter(position, center) {
       center = new AI.THREE.Vector3(center.x, center.y, center.z);
-      position = new THREE.Vector3(position.x, position.y, position.z);
+      position = new AI.THREE.Vector3(position.x, position.y, position.z);
       var distance = position.distanceTo(center);
       if (distance > 0.5) {
         return center;
@@ -567,10 +647,18 @@ module.exports = {
       }
     }
     //functions for walk    
-    if (atributes.moviment == 0) { //0=standing
+    if (atributes.moviment == 0 && (!activenpc.chase || activenpc.chase !== null)) { //0=standing
       if (activenpc.animation != 'idle') {
         activenpc.animation = 'idle';
         AI.broadCastData(map, { CHANGEANIMATION: { login: npcname, active: activenpc.animation } });
+      } else {
+        if (!activenpc.walkTime || activenpc.walkTime <= 1) { //UPDATE STANDING NPCS
+          activenpc.animation = 'walk';
+          AI.broadCastData(map, { NPCMOVE: { login: npcname, destin: activenpc.startpos, speed: 1 } });
+          activenpc.walkTime = 10;
+        } else {
+          activenpc.walkTime = activenpc.walkTime - 1;
+        }
       }
     }
     if (atributes.moviment == 1) { //1=free walkin         
@@ -612,6 +700,18 @@ module.exports = {
 
   },
 
+  _npcDiedUpdate: function ( npcname, activenpc, map) {
+    if (!activenpc.died || activenpc.died <= 0) return;
+    activenpc.died = activenpc.died - 1;
+    console.log(npcname,activenpc.died);
+    if (activenpc.died <= 0) {
+      activenpc.died = 0;
+      activenpc.animation = 'idle';
+      activenpc.attr.hp=100;
+      AI.broadCastData(map, { NPCREVIVE: { login: npcname, active: activenpc.animation } });
+    }
+  },
+
 
   updateMapUser: function (map, ontick) { //update data to users on this map      
     if (AI._activeMaps[map].tick > ontick) { AI._activeMaps[map].tick = 1; } //reset tick prevent remove
@@ -622,7 +722,7 @@ module.exports = {
       var walkTime = 5;
       var atributes = activenpc.attr;
       this._npcWalkUpdate(atributes, walkTime, npcname, activenpc, map);
-
+      this._npcDiedUpdate(npcname, activenpc, map);
     }
   },
 

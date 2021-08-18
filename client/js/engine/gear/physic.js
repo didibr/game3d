@@ -373,8 +373,8 @@ ENGINE.Physic = {
         objPhys.fakeobj.position.addScaledVector(objPhys.move.direction, speemov * delta);
         
         objPhys.move.distance = distance;
-        var dest=objPhys.move.destin.clone();
-        //if(objPhys.fakeobj.position.y<1.76)objPhys.fakeobj.position.y=1.76;
+        var dest=objPhys.fakeobj.position.clone().addScaledVector(objPhys.move.direction, 2);
+        //if(objPhys.fakeobj.position.y<1.76)objPhys.fakeobj.position.y=1.76;        
         dest.y=objPhys.fakeobj.position.y+0.05;    
         objPhys.fakeobj.lookAt(dest); //look at destin
 

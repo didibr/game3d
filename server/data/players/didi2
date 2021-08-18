@@ -1,6 +1,1 @@
-{"pass":"1234",
-"map":"testlight",
-"entity":"player",
-"pos":{"x":10,"y":2,"z":10},
-"save":{},
-"itens":[{"name":"sword","type":1},{"name":"sword","type":2}]}
+{"pass":"1234","map":"default","entity":"player","save":{},"itens":[],"drops":[],"attr":{"exp":0,"moviment":2,"agressive":false,"lvl":1,"hp":100,"str":1,"dex":1,"qtd":1,"areaspaw":0.1,"areachase":0.1,"revive":false,"revivetime":30}}

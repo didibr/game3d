@@ -15,6 +15,7 @@ ENGINE.ENTITY = {
       qua: { x: 0, y: 0, z: 0, w: 1 }
     }
     attr = {
+      exp:0,
       moviment: 0, //0Static - 1Walking - 2runing - 3sleeping
       agressive: false,
       lvl: 1,

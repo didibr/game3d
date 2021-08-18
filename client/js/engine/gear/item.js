@@ -20,6 +20,7 @@ ENGINE.ITEM = {
     extra = {
       icon: 'images/defaulticon.png'
     }
+    audios=new Array()
   },
   itemvar: null,
 
@@ -71,6 +72,7 @@ ENGINE.ITEM = {
           ENGINE.ITEM._controlschange(input);
         })
       })
+      ENGINE.ENTITY._preparesounds();
     });
 
   },
@@ -240,15 +242,17 @@ ENGINE.ITEM = {
         }
       }
       var item = new ENGINE.EDITORT.variables();//ancestor          
-      for (var k = 0; k < Object.keys(item).length; k++) {
+      /*for (var k = 0; k < Object.keys(item).length; k++) {
         var kname = Object.keys(item)[k];
         if (typeof (val[kname]) !== 'undefined') {
           item[kname] = val[kname];
         }
-      }
+      }*/
+      HELPER.updateArray(item,val);
       item._Scale = xscale;
       item._OBJ3d = val._shape == null ? true : false;
       item._shape = null;
+      
       jsona.push(item);
     });
 
@@ -273,6 +277,7 @@ ENGINE.ITEM = {
       w: ENGINE.ITEM._contactBox.quaternion.w
     };
 
+    ENGINE.ITEM.itemvar.audios=ENGINE.ENTITY.getAudios();
 
     jsonv =
       JSON.stringify({ name: nome, elements: { obj: jsona, item: ENGINE.ITEM.itemvar } });

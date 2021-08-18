@@ -107,7 +107,7 @@ ENGINE.TILE = {
   },
 
 
-  jsonToTileEditor: function (CALLER, json, extraX, extraY, extraZ) {
+  jsonToTileEditor: function (CALLER, json, extraX, extraY, extraZ,onload) {
     //Load Tile for EDITOR
     if (typeof (extraX) == 'undefined') extraX = 0;
     if (typeof (extraY) == 'undefined') extraY = 0;
@@ -153,7 +153,7 @@ ENGINE.TILE = {
         obval._shape = null;
         CALLER.scenevar[i] = obval;
         ENGINE.TILE.addObjToScene(obval, function (obj) {
-
+          if(typeof(onload)!=='undefined')onload(obj,obval);
         });
       } else { //PhysicObj  
         obval._OBJ3d = null;

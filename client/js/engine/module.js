@@ -76,7 +76,8 @@ window.LOADER = {
   objLoader: new OBJLoader(),
   //mttlLoader: _mttlloader,
   textureLoader: new THREE.TextureLoader(),
-  fbxloader: new FBXLoader()
+  fbxloader: new FBXLoader(),
+  fontloader: new THREE.FontLoader()
 }
 
 window.OrbitControl = {
@@ -224,10 +225,13 @@ window.ANIMATED = {
     }
     if (ANIMATED._loaded[fbx]) {
 
-      //Clone existent same Model/Skelleton and Animations, rescale and position to default      
-      ANIMATED._loaded[fbx].obj.remove(ANIMATED._loaded[fbx].audio);
+      //Clone existent same Model/Skelleton and Animations, rescale and position to default            
+      //var havebars=ANIMATED._loaded[fbx].bars;
+      //if(havebars)ANIMATED._loaded[fbx].obj.remove(havebars); //remove atached bars
+      ANIMATED._loaded[fbx].obj.remove(ANIMATED._loaded[fbx].audio); //remove atached audios
       var object = SkeletonUtils.clone(ANIMATED._loaded[fbx].obj);
-      ANIMATED._loaded[fbx].obj.add(ANIMATED._loaded[fbx].audio);
+      ANIMATED._loaded[fbx].obj.add(ANIMATED._loaded[fbx].audio); //put audios back
+      //if(havebars)ANIMATED._loaded[fbx].obj.add(havebars);//put bars back
       object.scale.addScalar(ANIMATED._loaded[fbx].sca);
       for (var i = 0; i < ANIMATED._loaded[fbx].obj.animations.length; i++) {
         object.animations.push(ANIMATED._loaded[fbx].obj.animations[i].clone());
@@ -721,23 +725,23 @@ window.SHADER = {
   },
 
   darkenNonBlured: function (obj) {
-    if (SHADER.blurLayer != null && obj.isMesh &&
-      SHADER.blurLayer.test(obj.layers) === false) {
+    if (SHADER.blurLayer != null && (obj.isMesh||obj.isSprite) &&
+      SHADER.blurLayer.test(obj.layers) === false )  {
       SHADER.materials[obj.uuid] = obj.material;
       obj.material = SHADER.darkMaterial;
     }
   },
 
   darkenNonFilmed: function (obj) {
-    if (SHADER.filmLayer != null && obj.isMesh &&
-      SHADER.filmLayer.test(obj.layers) === false) {
+    if (SHADER.filmLayer != null && (obj.isMesh||obj.isSprite) &&
+      SHADER.filmLayer.test(obj.layers) === false ) {
       SHADER.materials[obj.uuid] = obj.material;
       obj.material = SHADER.darkMaterial;
     }
   },
 
   darkenNonBloomed: function (obj) {
-    if (SHADER.bloomLayer != null && obj.isMesh &&
+    if (SHADER.bloomLayer != null && (obj.isMesh||obj.isSprite) &&
       SHADER.bloomLayer.test(obj.layers) === false) {
       SHADER.materials[obj.uuid] = obj.material;
       obj.material = SHADER.darkMaterial;

@@ -17,8 +17,8 @@ function jsload() {
     var t = document.createElement("script"); t.async = false;
     t.src = e, document.getElementsByTagName("head")[0].appendChild(t)
   }
-  loadJS('https://code.jquery.com/jquery-3.5.1.js');
-  loadJS('https://code.jquery.com/ui/1.12.1/jquery-ui.js');
+  loadJS('js/build/jquery.js');
+  loadJS('js/build/jquery-ui.js');
   //loadJS('js/build/three.js');
   loadJS('js/build/ammo.js');
   //xxxloadJS('js/build/three.module.js');
@@ -77,9 +77,8 @@ function firstLoad() {
         Working on progress...</i></div>`
       );
       $('#playdiv').css('left',parseInt(parseInt($('#playdiv').css('left'))-($('#playdiv').width()/2))+'px');
-      $('#loadmaps').load(ENGINE.url + 'GETMAPS');
-  });  
-  $('#test').prop("disabled", false);
+      //$('#loadmaps').load(ENGINE.url + 'GETMAPS');
+  });    
   console.log('Engine Loaded');  
 }
 

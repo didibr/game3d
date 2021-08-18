@@ -1,5 +1,3 @@
-@import url('//fonts.googleapis.com/css2?family=Raleway:wght@500&display=swap');
-
 *{box-sizing:border-box}body,html{margin:0;padding:0;font-family:sans-serif;width:100%;height:100%}body{font-family:sans-serif;background:linear-gradient(#141e30,#243b55);background-position:center center;background-size:cover;background-repeat:no-repeat}
 
   #firstload{
@@ -161,16 +159,21 @@
 }
 
 .cssuser{
+  background-color: #080808ad;
+  border-radius: 10px;
   color: rgb(13 243 19);
+  padding-left: 17px;
   margin-top: -9em;
   font-size: 10px;
-  opacity:0.6;
-  font-family: 'Raleway', sans-serif;
+  opacity: 0.6;
+  font-family: monospace;
+  text-transform: capitalize;
+  /*font-family: 'Raleway', sans-serif;*/
   -webkit-user-select: none;
-    -khtml-user-select: none;
-    -moz-user-select: none;
-    -o-user-select: none;
-    user-select: none;    
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -o-user-select: none;
+  user-select: none;    
 }
 
 progress {
@@ -221,4 +224,84 @@ progress::-moz-progress-bar {
         #56f542 20px
 );
   border-radius: 50px;
+}
+
+.dotlvl {
+  color: black;
+    height: 18px;
+    width: 18px;
+    background-color: rgb(100 155 93);
+    border-radius: 50%;
+    position: absolute;
+    left: 1px;
+    top: 1px;
+    text-align: center;
+    font-size: 8px;
+    padding-top: 4px;
+}
+
+.barname{
+  text-align: center;
+  color: #2af330;
+}
+
+.inventory{
+  display: block;
+  background-color: #ffffffa6;
+  width: 242px;
+  height: 223px;
+  flex-direction: row;
+  margin-top: 7px;
+  cursor: default;
+  opacity: 0.8;
+  border-radius: 3px;
+  padding: 2px;
+  -webkit-user-drag: none; 
+  -khtml-user-drag: none; 
+  -moz-user-drag: none; 
+  -o-user-drag: none; 
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -o-user-select: none;
+  user-select: none;  
+}
+
+.inventoryTitle{
+  color: #2af330;
+}
+
+.inventorySlot{
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #484848;
+}
+
+.inventoryBody{  
+  width: 32px;
+  height: 32px;
+  border: 1px solid #484848;
+  position: absolute;
+}
+
+.itemBody{
+  width: 100%;
+  height: 100%;
+  margin: 0px;
+  padding: 0px;
+  border: none;
+}
+
+.inventoyInUse{
+  width: 80px;
+  height: 200px;
+  float: left;
+  display: block;
+  background-image: url(../images/ivpose.png);
+  margin-right: 4px;
+}
+
+.inventoySlots{
+  width: 238px;
 }

@@ -337,16 +337,26 @@ var ENGINE = {
   },
 
   _onWindowResize:function(){
+    console.log('Resize');
     const width = ENGINE.divObj.width();
     const height = ENGINE.divObj.height();
     ENGINE.camera.aspect = width / height;
-    ENGINE.camera.updateProjectionMatrix();
-    ENGINE.camera2.left = - width / 2;
-    ENGINE.camera2.right = width / 2;
-    ENGINE.camera2.top = height / 2;
-    ENGINE.camera2.bottom = - height / 2;
+    ENGINE.camera.updateProjectionMatrix();    
+    ENGINE.camera.updateProjectionMatrix();     
+    ENGINE.renderer.setSize( width, height );    
+
+    //ENGINE.camera2.left = - width / 2;
+    //ENGINE.camera2.right = width / 2;
+    //ENGINE.camera2.top = height / 2;
+    //ENGINE.camera2.bottom = - height / 2;
+    ENGINE.camera2.aspect = width / height;    
     ENGINE.camera2.updateProjectionMatrix();    
-    ENGINE.renderer.setSize( width, height );
+    if(ENGINE.GAME._cssrender){
+      ENGINE.GAME._cssrender.setSize( width, height ); 
+      $(ENGINE.GAME._cssrender.domElement).css('left',ENGINE.canvObj.offsetLeft+'px');
+      $(ENGINE.GAME._cssrender.domElement).css('top',ENGINE.canvObj.offsetTop+'px');
+    }        
+    $('#playdiv').css('left','');
   },
 
   _onKeyDown: function (event) {

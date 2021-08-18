@@ -1,6 +1,7 @@
 window._UN = 'undefined';
 ENGINE.GAME = {
-  _cssrender:null,
+  _font: null,
+  _cssrender: null,
   _delta: 0,
   _me: {}, //my data
   _players: new Array(),//array same as mydata    
@@ -63,9 +64,47 @@ ENGINE.GAME = {
     requestAnimationFrame(ENGINE.GAME.renderupdate);
   },
 
+  getPlayerOrNpc: function (login) {
+    for (var i = 0; i < Object.keys(ENGINE.GAME._players).length; i++) {
+      var pname = Object.keys(ENGINE.GAME._players)[i];
+      var player = ENGINE.GAME._players[pname];
+      if (pname == login) return player;
+    }
+    for (var i = 0; i < Object.keys(ENGINE.GAME._npcData).length; i++) {
+      var pname = Object.keys(ENGINE.GAME._npcData)[i];
+      var player = ENGINE.GAME._npcData[pname];
+      if (pname == login) return player;
+    }
+    return null;
+  },
 
-  renderCSS:function(delta){
-    this._cssrender.render( ENGINE.scene, ENGINE.camera );
+  renderCSS: function (delta) {
+    //ENGINE.GAME._players[login];
+    for (var i = 0; i < Object.keys(ENGINE.GAME._players).length; i++) {
+      var pname = Object.keys(ENGINE.GAME._players)[i];
+      var player = ENGINE.GAME._players[pname];
+      if (player.bars && player.bars.div && player.bars.div.position) {
+        var pos = ANIMATED._data[pname].shape.position;
+        player.bars.div.position.set(pos.x, pos.y + 1.8, pos.z);
+        //player.bars.name.position.set(pos.x, pos.y + 2, pos.z);
+        //player.bars.div.lookAt(ENGINE.camera.position);
+        player.bars.div.quaternion.copy(ENGINE.camera.quaternion);
+      }
+    }
+    for (var i = 0; i < Object.keys(ENGINE.GAME._npcData).length; i++) {
+      var pname = Object.keys(ENGINE.GAME._npcData)[i];
+      var player = ENGINE.GAME._npcData[pname];
+      if (player.bars && player.bars.div && player.bars.div.position) {
+        var pos = ANIMATED._data[pname].shape.position;
+        player.bars.div.position.set(pos.x, pos.y + 1.8, pos.z);
+        //player.bars.name.position.set(pos.x, pos.y + 2, pos.z);
+        //player.bars.div.lookAt(ENGINE.camera.position);
+        player.bars.div.quaternion.copy(ENGINE.camera.quaternion);
+      }
+    }
+    //ENGINE.GAME._npcData[login];    
+
+    this._cssrender.render(ENGINE.scene, ENGINE.camera);
   },
 
   _xa: 1,
@@ -75,8 +114,12 @@ ENGINE.GAME = {
     if (typeof (CONTROLS.screenSpacePanning) == _UN ||
       Object.keys(ENGINE.GAME._players).length < 1 ||
       ENGINE.GAME._stagesloaded == false) return;
-    if (typeof (ANIMATED._data[ENGINE.login]) == _UN) return;
-    this._me.pos = ANIMATED._data[ENGINE.login].shape.position;
+    if (!ENGINE.GAME._me.animatedPlayer) ENGINE.GAME._me.animatedPlayer = ENGINE.GAME.getAnimated(ENGINE.login);
+    if (typeof (ENGINE.GAME._me.animatedPlayer) == _UN) return;
+    if (!ENGINE.GAME._me.player) ENGINE.GAME._me.player = ENGINE.GAME.getPlayerOrNpc(ENGINE.login);
+    if (typeof (ENGINE.GAME._me.player) == _UN) return;
+    this._me.pos = this._me.animatedPlayer.shape.position;
+    if (this._me.animatedPlayer.onAction && this._me.animatedPlayer.onAction.inventory == true) return;
     //CONTROLS.target.set(this._me.pos.x,this._me.pos.y,this._me.pos.z); return;//easy folow    
     var distance = CONTROLS.target.distanceTo(this._me.pos);
     var direction = new THREE.Vector3().subVectors(this._me.pos, CONTROLS.target).normalize();
@@ -159,10 +202,10 @@ ENGINE.GAME = {
     //change camera position 
     return;
     if (ENGINE.GAME._speed.mbRight == 1) return;
-    if (!ENGINE.GAME._players[ENGINE.login] ||
-      !ENGINE.GAME._players[ENGINE.login].angle ||
-      !ENGINE.GAME._players[ENGINE.login].angle.isVector3) return;
-    var playerA3D = ENGINE.GAME._players[ENGINE.login].angle;
+    if (!ENGINE.GAME._me.player ||
+      !ENGINE.GAME._me.player.angle ||
+      !ENGINE.GAME._me.player.angle.isVector3) return;
+    var playerA3D = this._me.player.angle;
     var playerAngle = THREE.Math.radToDeg(Math.atan2(playerA3D.x, playerA3D.z));
     var camA3d = new THREE.Vector3(); ENGINE.camera.getWorldDirection(camA3d);
     var camAngle = THREE.Math.radToDeg(Math.atan2(camA3d.x, camA3d.z));
@@ -191,12 +234,12 @@ ENGINE.GAME = {
 
   updatePlayerState: function (delta) {
     this._updatePlayersTimer += delta; //time to update player state
-    if (this._updatePlayersTimer > this._speed.updTime && typeof (ANIMATED._data[ENGINE.login]) !== _UN) {
+    if (this._updatePlayersTimer > this._speed.updTime && typeof (ENGINE.GAME._me.animatedPlayer) !== _UN) {
       //console.log('update')
-      var annime = ANIMATED._data[ENGINE.login];
+      var annime = ENGINE.GAME._me.animatedPlayer;
       var object = annime.shape;
       var moves = object.userData.physicsBody.move;
-      var player = ENGINE.GAME._players[ENGINE.login];
+      var player = ENGINE.GAME._me.player;
       if (typeof (player.extraspeed) == _UN) player.extraspeed = 0;
       if (typeof (moves) == _UN || moves.ACTIVE != true) moves = null;
       var pos = { x: object.position.x, y: object.position.y, z: object.position.z };
@@ -413,6 +456,11 @@ ENGINE.GAME = {
     }
   },
 
+  _swapLogin() {
+    ENGINE.DIALOG.reset();
+    this.message({ INVALIDLOGIN: 'XX' });
+  },
+
   _getPlayerConfig: function () {
     WSsend('GETPLAYERCONFIG', { login: ENGINE.login, pass: ENGINE.pass });
   },
@@ -457,6 +505,32 @@ ENGINE.GAME = {
     ENGINE.DIALOG.load('createlogin.html', function (dialog) {
       ENGINE.DIALOG.popup(dialog, 'New Login', true);
     });
+  },
+
+  createFont: function () {
+    LOADER.fontloader.load('./css/font.json', function (font) {
+      ENGINE.GAME._font = font;
+    }); //end load function
+  },
+
+  createText: function (message, width, color) {
+    //const color = 0x006699;
+    const matLite = new THREE.MeshBasicMaterial({
+      color: color,
+      transparent: true,
+      opacity: 0.4,
+      side: THREE.DoubleSide
+    });
+    const shapes = ENGINE.GAME._font.generateShapes(message, width);
+    const geometry = new THREE.ShapeGeometry(shapes);
+    geometry.computeBoundingBox();
+    const xMid = - 0.5 * (geometry.boundingBox.max.x - geometry.boundingBox.min.x);
+    geometry.translate(xMid, 0, 0);
+    // make shape ( N.B. edge view not visible )
+    const text = new THREE.Mesh(geometry, matLite);
+    return text;
+    //text.position.z = - 150;
+    //scene.add(text);
   },
 
   loadMap: async function () {
@@ -506,15 +580,17 @@ ENGINE.GAME = {
     document.addEventListener('dragover', event => event.preventDefault());
     document.addEventListener('drop', event => event.preventDefault());
 
+    this.createFont();
 
     this._cssrender = new RENDERER.renderer();
-    this._cssrender.setSize( ENGINE.canvObj.width, ENGINE.canvObj.height );
+    this._cssrender.setSize(ENGINE.canvObj.width, ENGINE.canvObj.height);
     this._cssrender.domElement.style.position = 'absolute';
-    this._cssrender.domElement.style.top = ENGINE.canvObj.offsetTop+'px';
-    this._cssrender.domElement.style.left = ENGINE.canvObj.offsetLeft+'px';
-    this._cssrender.domElement.id='cssrender';
-    document.body.appendChild( this._cssrender.domElement );
-   
+    this._cssrender.domElement.style.top = ENGINE.canvObj.offsetTop + 'px';
+    this._cssrender.domElement.style.left = ENGINE.canvObj.offsetLeft + 'px';
+    this._cssrender.domElement.id = 'cssrender';
+    document.body.appendChild(this._cssrender.domElement);
+
+
 
     var data = await HELPER.simpleDownloadSync(url);
     var tiles = data.tiles;
@@ -616,8 +692,11 @@ ENGINE.GAME = {
       ENGINE.SKY.create(this._tiles, ENGINE.url + 'images/' + sky.bg);//'./images/pano0.jpg'
     }
 
-    //console.log(this._entityCount)
+
     if (this._entityCount == 0) {
+      ENGINE.GAME._loadedStages['item'] = true;
+      ENGINE.GAME._loadedStages['drop'] = true;
+      ENGINE.GAME._loadedStages['sound'] = true;
       this._loadComplete();
     }
 
@@ -690,11 +769,15 @@ ENGINE.GAME = {
         this._players[player.login].pos = player.pos;
         this._players[player.login].qua = player.qua;
         this._players[player.login].speed = player.speed;
-        HELPER.updateArray(this._players[player.login], player); //update base with player data
+        this._players[player.login].attr = player.attr;
+        HELPER.updateArray(this._players[player.login], player); //update base with player data      
         this._loadEntityObj(startile, player.login, data)
       } else {//update existing or Load complete
-        if (player.login == ENGINE.login && typeof (CONTROLS.screenSpacePanning) == _UN) {
+        if (player.login == ENGINE.login && typeof (CONTROLS.screenSpacePanning) == _UN &&
+          ANIMATED._data[player.login]) {
           // console.log('playerJoin complete', player.login, this._completeloaded);
+          // try {
+          //console.log(ANIMATED._data[player.login].object);
           CONTROLS = OrbitControl.create(ENGINE.camera, ENGINE.GAME._cssrender.domElement);
           var campos = ANIMATED._data[player.login].object.position.clone().
             add(new THREE.Vector3(0, 10, 0)).
@@ -713,6 +796,10 @@ ENGINE.GAME = {
             RIGHT: THREE.MOUSE.ROTATE//THREE.MOUSE.PAN
           }
           this.clearCache();
+          //} catch (error) {
+          //  console.warn('Error playerJoin trying aggain', error);
+          //setTimeout(function(){ENGINE.GAME.playerJoin(player);},1000);
+          //}
         }
       }
     }
@@ -762,6 +849,7 @@ ENGINE.GAME = {
 
   playerLeave: function (login) {
     //FAZER REMOVER AUDIOS QUANDO PLAYER QUITAR
+    ENGINE.scene.remove(ENGINE.GAME._players[login].bars.div);
     if (ANIMATED._data[login]) {
       for (var i = 0; i < ANIMATED._data[login].audio.length; i++) {
         if (ANIMATED._data[login].audio[i].isPlaying == true)
@@ -865,15 +953,16 @@ ENGINE.GAME = {
         } else {
           //console.log('loadPlayer', name, data);
         }
-
         ENGINE.Physic.bodyTeleport(
           ANIMATED._data[name].shape,
           new THREE.Vector3(
-            startposition.x + data.box.pos.x,
+            startposition.x, //+ data.box.pos.x,
             startposition.y + ANIMATED._data[name].shape.position.y + data.box.pos.y,
-            startposition.z + data.box.pos.z
+            startposition.z, //+ data.box.pos.z
           )
         );
+
+
         //Remove Box Utilized only to positionate according Tile
         if (data.box) delete data.box;
         //remove model Utilized only to download and positionate fbx model
@@ -1124,7 +1213,7 @@ ENGINE.GAME = {
 
 
   _loadedStages: {},//loaded itens from buffer
-  _loadComplete: function (completed) {
+  _loadComplete: async function (completed) {
     if (ENGINE.GAME._loadedStages['item'] &&
       ENGINE.GAME._loadedStages['drop'] &&
       ENGINE.GAME._loadedStages['sound']) { //all complete
@@ -1132,16 +1221,16 @@ ENGINE.GAME = {
       for (var i = 0; i < Object.keys(ENGINE.GAME._playerstemp).length; i++) {
         var kname = Object.keys(ENGINE.GAME._playerstemp)[i];
         var data = ENGINE.GAME._playerstemp[kname];
-        ENGINE.GAME.playerJoin(data);
+        await ENGINE.GAME.playerJoin(data);
       }
-      var livearea=$(this._cssrender.domElement);
+      var livearea = $(this._cssrender.domElement);
       //livearea.hide();
       //$(window)
       $(window).off("keyup").on("keyup", this.onDocumentKeyUp);
       $(window).off("keydown").on("keydown", this.onDocumentKeyDown);
       $(ENGINE.canvObj).off("click").on("click", this.onCanvasClick);
-      $(window).off("mousemove").on("mousemove", ENGINE._onMouseMove);      
-      $(window).off("resize").on("resize", ENGINE._onWindowResize );
+      $(window).off("mousemove").on("mousemove", ENGINE._onMouseMove);
+      $(window).off("resize").on("resize", ENGINE._onWindowResize);
       CONTROLS.mouseEvent = ENGINE.GAME.mouseEvent;
       CONTROLS.mouseWheel = ENGINE.GAME.mouseWheel;
 
@@ -1167,7 +1256,6 @@ ENGINE.GAME = {
   },
 
   onDocumentKeyDown: function (event) {
-    console.log('keydown')
     event.preventDefault();
     var actions = {};
     if (event.code == 'KeyZ' && (event.ctrlKey || event.metaKey)) {
@@ -1177,6 +1265,9 @@ ENGINE.GAME = {
     if (event.keyCode == 112 && (!event.ctrlKey)) { //key F1
       ENGINE.GAME.cameraFocusPlayer();//focus player
       return false;
+    }
+    if (event.code == 'KeyI' && (!event.ctrlKey)) { //Inventory      
+      actions.inventory = true;
     }
     if (event.code == 'KeyD' && (!event.ctrlKey) && typeof (ENGINE.intersects) != _UN) { //key D - Run      
       actions.run = true;
@@ -1194,28 +1285,56 @@ ENGINE.GAME = {
 
   playerAction: function (login, action) { //Change Player State
     if (this._completeloaded == false) return;
-    var player = ENGINE.GAME._players[login];
+    var player = ENGINE.GAME.getPlayerOrNpc(login);
+    /*
+    ENGINE.GAME._players[login];
     if (typeof (player) == 'undefined' || player == null)
       player = ENGINE.GAME._npcData[login];
     if (typeof (player) == 'undefined' || player == null) return;
-    var animatedPlayer = ANIMATED._data[login];
-    if (!animatedPlayer.onAction) animatedPlayer.onAction = {};
+    */
+    if (player == null) return;
+    var sendAction = false;
+    var animatedPlayer = ENGINE.GAME.getAnimated(login);
     //player run
-    if (action.run == true) {
-      player.speedExtra = 2;
-    } else {
-      player.speedExtra = 0;
+    if (action.inventory) {
+      if (!animatedPlayer.onAction.inventory) animatedPlayer.onAction.inventory = false;
+      animatedPlayer.onAction.inventory = !animatedPlayer.onAction.inventory;
+      sendAction = false;
+      if (animatedPlayer.onAction.inventory == true) {
+        ENGINE.GAME.showInventory(true);
+        CONTROLS.enabled = false;
+      } else {
+        ENGINE.GAME.showInventory(false);
+        CONTROLS.enabled = true;
+      }
     }
+    if (animatedPlayer.onAction.inventory && animatedPlayer.onAction.inventory == true) return;
+
+    //player run
+    if (animatedPlayer.onAction.run != action.run) {
+      animatedPlayer.onAction.run = action.run;
+      sendAction = true;
+      if (action.run == true) {
+        player.speedExtra = 2;
+      } else {
+        player.speedExtra = 0;
+      }
+    }
+
     //atack pressed
-    if (action.attack == true) {
-      var attackType = 'swatack';
-      animatedPlayer.onAction.attack = true;
-      ANIMATED.change(login, attackType, 10);
-      setTimeout(() => {
-        ANIMATED.deanimateType(login, attackType, true);
-        animatedPlayer.onAction.attack = false;
-      }, 500);
+    if (animatedPlayer.onAction.attack != action.attack) {
+      if (action.attack == true) {
+        sendAction = true;
+        var attackType = 'swatack';
+        animatedPlayer.onAction.attack = true;
+        ANIMATED.change(login, attackType, 10);
+        setTimeout(() => {
+          ANIMATED.deanimateType(login, attackType, true);
+          animatedPlayer.onAction.attack = false;
+        }, 500);
+      }
     }
+
     //jump
     if (action.jump == true) {
       if (animatedPlayer.onAction.jump != true) {
@@ -1230,48 +1349,239 @@ ENGINE.GAME = {
         }, 600);
       }
     }
-    if (login == ENGINE.login && Object.keys(action).length > 0) {
+
+
+    if (login == ENGINE.login && Object.keys(action).length > 0 && sendAction == true) {
       var pos = { x: player.pos.x, y: player.pos.y, z: player.pos.z };
       var qua = null;
-      var near = ENGINE.GAME.getNearActors(2,login);
+      var near = ENGINE.GAME.getNearActors(2, login);
       try {
         qua = { x: player.qua.x, y: player.qua.y, z: player.qua.z, w: player.qua.w };
       } catch (e) { qua = { x: 0, y: 0, z: 0, w: 1 } }
-      WSsend('ACTION', { login: login, action: action,near:near, pos: pos, qua: qua });
+      WSsend('ACTION', { login: login, action: action, near: near, pos: pos, qua: qua });
     }
 
   },
 
+  getAnimated: function (login) {
+    var animatedPlayer = ANIMATED._data[login];
+    if (typeof (animatedPlayer.onAction) == _UN) animatedPlayer.onAction = {};
+    return animatedPlayer;
+  },
 
-  getNearActors:function(distance,login){
-    var ret={};
-    for(var i=0;i<Object.keys(ENGINE.GAME._npcData).length;i++){
-      var npcName=Object.keys(ENGINE.GAME._npcData)[i];
-      var npc=ENGINE.GAME._npcData[npcName];
-      if(npc.pos.distanceTo(ENGINE.GAME._players[login].pos) <= distance){
-        //NEED CALCULATE ANGLE BTWEEN PLAYER AND TARGET
-        /*var angle=ENGINE.GAME._players[login].pos.angleTo(npc.pos);
-        var angle=ENGINE.GAME._players[login].angle;
-        var fakeobj=new THREE.Object3D();
-            fakeobj.position.copy(ENGINE.GAME._players[login].pos);
-            fakeobj.lookAt(npc.pos);
-        var playerAngle =new THREE.Vector3();
-        fakeobj.getWorldDirection(playerAngle);
-        playerAngle = THREE.Math.radToDeg(Math.atan2(playerAngle.x, playerAngle.z));
-        angle= THREE.Math.radToDeg(Math.atan2(angle.x, angle.z));
-        console.log(angle,playerAngle);*/
-        ret[npcName]=1;
+  ivallowDrop: function (ev) {
+    ev.preventDefault();
+  },
+
+  ivdrag: function (ev) {
+    ev.dataTransfer.setData("item", ev.target.id);
+  },
+
+  ivdrop: async function (ev) {
+    ev.preventDefault();
+    var player = ENGINE.GAME._me.player;
+    var playerAnim = ENGINE.GAME._me.animatedPlayer;
+    function putItemOnBag(index, boneName) {
+      var itens = ENGINE.GAME._itenslist[player.login].itens[index];
+      //var boneName = HELPER.getBonneByNumber(type);
+      for (var c = 0; c < itens.scene.length; c++) {
+        var val = itens.scene[c];
+        if (val._OBJ3d != null) {
+          playerAnim.bones[boneName].remove(val._OBJ3d);
+        }
       }
+      ENGINE.GAME._droplist[player.login].drops.push(itens);
+      ENGINE.GAME._itenslist[player.login].itens.splice(index, 1);
     }
-    for(var i=0;i<Object.keys(ENGINE.GAME._players).length;i++){
-      var playerNane=Object.keys(ENGINE.GAME._players)[i];
-      var player=ENGINE.GAME._players[playerNane];
-      if(playerNane!==login)
-      if(player.pos.distanceTo(ENGINE.GAME._players[login].pos) <= distance){        
-        ret[playerNane]=2;
+    var data = ev.dataTransfer.getData("item");
+    var receiveItem = document.getElementById(data);
+    if (!receiveItem.attributes) return;
+    var rtype = receiveItem.attributes.getNamedItem('data-from').value;
+    if (!rtype) return;
+
+    var slotItem = ev.target;
+    if (!slotItem.attributes) return
+    var stype = slotItem.attributes.getNamedItem('data-to').value;
+    if (!stype) return;
+
+    if (stype === "d" && rtype === "d") {//bag to bag
+      //ev.target.appendChild(receiveItem);
+      ENGINE.GAME.repaintInventory();
+      return;
+    }
+    if (stype === "d" && rtype === "i") { //hand to bag     
+      var itype = parseInt(receiveItem.attributes.getNamedItem('data-type').value);
+      var index = parseInt(receiveItem.attributes.getNamedItem('data-index').value);
+      var bonename = receiveItem.parentElement.id.substr(2, receiveItem.parentElement.id.length).trim();
+      putItemOnBag(index, bonename);
+      //ev.target.appendChild(receiveItem);
+      ENGINE.GAME.repaintInventory();
+      return;
+    }
+    if (stype === "i" && rtype === "d") { //bag to hand
+      var itype = parseInt(receiveItem.attributes.getNamedItem('data-type').value);
+      var index = parseInt(receiveItem.attributes.getNamedItem('data-index').value);
+      var bonename = ev.target.id.substr(2, ev.target.id.length).trim();
+      //accept only drop equivalent item on bones
+      //console.log(itype,bonename,HELPER.getBonneByNumber(1))
+      if (itype == 1) //weapon
+        if (bonename !== HELPER.getBonneByNumber(1) && bonename !== HELPER.getBonneByNumber(2)) return;
+      if (itype == 2) //Armor
+        if (bonename !== HELPER.getBonneByNumber(9)) return;
+      if (itype == 4) //Shield
+        if (bonename !== HELPER.getBonneByNumber(1)) return;
+      if (itype == 5) //Legs
+        if (bonename !== HELPER.getBonneByNumber(3) && bonename !== HELPER.getBonneByNumber(4)) return;
+      if (itype == 6) //Helmet
+        if (bonename !== HELPER.getBonneByNumber(7)) return;
+      console.log('pass', bonename);
+      //if have item on bone, put on bag
+      for (var i = 0; i < ENGINE.GAME._itenslist[player.login].itens.length; i++) {
+        var data = ENGINE.GAME._itenslist[player.login].itens[i];
+        if (data.scene[0]._OBJ3d.parent == playerAnim.bones[bonename]) {
+          putItemOnBag(i, bonename);
+          break;
+        }
       }
+      //get number of bonename
+      var type = 0;
+      for (var i = 0; i < 10; i++) {
+        if (bonename == HELPER.getBonneByNumber(i)) {
+          type = i;
+          break;
+        }
+      }
+      var test = HELPER.getBonneByNumber(type);
+      console.log('boneto', test, type);
+      //put or create 3dobj and atach to bonne number
+      var tile = ENGINE.GAME._itenslist[player.login].tile;
+      var itens = ENGINE.GAME._droplist[player.login].drops[index]
+      ENGINE.GAME._itenslist[player.login].itens.push(itens);
+      var name = itens.name;
+      if (typeof (itens.scene) == _UN) { //no loaded 3dobj   
+        var url = ENGINE.url + 'LOADITEM' + name;
+        var data = await HELPER.simpleDownloadSync(url);
+        ENGINE.TILE.jsonToTileEditor(tile, data.obj, 0, 0, 0, function (obj, val) {
+          if (val._OBJ3d != null) {
+            HELPER.objaddToBone(val, player.login, type);
+            ENGINE.itemCache.push(val._OBJ3d);
+          }
+        });
+        itens.obj = data.obj;
+        itens.scene = tile.scenevar;
+        itens.item = data.item;
+        repeat = true;
+      } else {//as 3d created
+        for (var c = 0; c < itens.scene.length; c++) {
+          var val = itens.scene[c];
+          if (val._OBJ3d != null) {
+            HELPER.objaddToBone(val, player.login, type);
+            ENGINE.itemCache.push(val._OBJ3d);
+          }
+        }
+      }
+      ENGINE.GAME._droplist[player.login].drops.splice(index, 1);
+      ENGINE.GAME.repaintInventory();
+      //ev.target.appendChild(receiveItem);
     }
-   return ret;
+
+  },
+
+  repaintInventory: function () {
+    var ivpos = ENGINE.GAME._players[ENGINE.GAME._me.player.login].bars.inventory.position.clone();
+    //var lastpos={x:ivpos.x,y:ivpos.y,z:ivpos.z};
+    ENGINE.scene.remove(ENGINE.GAME._players[ENGINE.GAME._me.player.login].bars.inventory);
+    $('.inventory').remove();
+    ENGINE.GAME.showInventory(true, function () {
+      ENGINE.GAME._players[ENGINE.GAME._me.player.login].bars.inventory.position.copy(ivpos);
+    });
+  },
+
+  showInventory: function (state, callback) {
+    var player = ENGINE.GAME._me.player;
+    function rndID() {
+      var cid = 'ivid' + Math.floor(Math.random() * 26) + Date.now();
+      if (document.getElementById(cid)) cid = rndID();
+      return cid;
+    }
+    function addimgItem(div, item, type, from, index) {
+      var dd = document.getElementById(div);
+      dd.innerHTML =
+        '<img id="' + rndID() + '" src="' + item.extra.icon + '" name="' + item.name + '" data-type="' + type + '" class="itemBody"' +
+        ' data-from="' + from + '" data-index="' + index + '" draggable="true" ondragstart="ENGINE.GAME.ivdrag(event)"/>';
+    }
+    if (state == true) {
+      ENGINE.DIALOG.load('inventory.html', function (dialog) {
+        var inventory = document.createElement('div');
+        inventory.className = 'inventory';
+        inventory.innerHTML = dialog;
+        $('#cssdata').html(inventory);
+        player.bars.inventory = RENDERER.css(inventory);
+        player.bars.inventory.position.copy(player.bars.div.position);
+        ENGINE.scene.add(player.bars.inventory);
+
+        if (ENGINE.GAME._itenslist[player.login])
+          for (var i = 0; i < ENGINE.GAME._itenslist[player.login].itens.length; i++) {
+            var data = ENGINE.GAME._itenslist[player.login].itens[i];
+            var bonename = data.scene[0]._OBJ3d.parent.name;
+            if (bonename.startsWith('mixamorig') == true)
+            bonename = bonename.substr('mixamorig'.length, bonename.length);
+            while (isNaN(bonename[0]) == false) {
+              bonename = bonename.substr(1, bonename.length)
+            }
+            addimgItem('iv' + bonename, data.item, data.type, 'i', i);
+          }
+        if (ENGINE.GAME._droplist[player.login])
+          for (var i = 0; i < ENGINE.GAME._droplist[player.login].drops.length; i++) {
+            var data = ENGINE.GAME._droplist[player.login].drops[i];
+            if (data && data != null) {
+              addimgItem('iv' + (i + 1), data.item, data.type, 'd', i);
+            }
+          }
+        if (typeof (callback) != 'undefined') callback();
+      });
+    } else {
+      ENGINE.scene.remove(player.bars.inventory);
+      if (typeof (callback) != 'undefined') callback();
+    }
+  },
+
+
+  getNearActors: function (distance, login) {
+
+    var ret = {};
+    for (var i = 0; i < Object.keys(ENGINE.GAME._npcData).length; i++) {
+      var npcName = Object.keys(ENGINE.GAME._npcData)[i];
+      var npc = ENGINE.GAME._npcData[npcName];
+      var animatedPlayer = ENGINE.GAME.getAnimated(npcName);
+      if (!animatedPlayer.onAction.died || animatedPlayer.onAction.died == 0)
+        if (npc.pos.distanceTo(ENGINE.GAME._players[login].pos) <= distance) {
+          //NEED CALCULATE ANGLE BTWEEN PLAYER AND TARGET
+          /*var angle=ENGINE.GAME._players[login].pos.angleTo(npc.pos);
+          var angle=ENGINE.GAME._players[login].angle;
+          var fakeobj=new THREE.Object3D();
+              fakeobj.position.copy(ENGINE.GAME._players[login].pos);
+              fakeobj.lookAt(npc.pos);
+          var playerAngle =new THREE.Vector3();
+          fakeobj.getWorldDirection(playerAngle);
+          playerAngle = THREE.Math.radToDeg(Math.atan2(playerAngle.x, playerAngle.z));
+          angle= THREE.Math.radToDeg(Math.atan2(angle.x, angle.z));
+          console.log(angle,playerAngle);*/
+          ret[npcName] = 1;
+        }
+    }
+
+    for (var i = 0; i < Object.keys(ENGINE.GAME._players).length; i++) {
+      var playerNane = Object.keys(ENGINE.GAME._players)[i];
+      var player = ENGINE.GAME._players[playerNane];
+      var animatedPlayer = ENGINE.GAME.getAnimated(playerNane);
+      if (playerNane !== login) if (!animatedPlayer.onAction.died || animatedPlayer.onAction.died == 0)
+        if (player.pos.distanceTo(ENGINE.GAME._players[login].pos) <= distance) {
+          ret[playerNane] = 2;
+        }
+    }
+
+    return ret;
   },
 
 
@@ -1280,7 +1590,10 @@ ENGINE.GAME = {
   onCanvasClick: function (event) {
     if (ENGINE.GAME.disableTileClick == true || typeof (ENGINE.intersects) == _UN) return;
     if (ENGINE.intersects.length <= 0) return;
-    if (typeof (ENGINE.GAME._players[ENGINE.login]) == _UN) return;
+    var player = ENGINE.GAME._me.player;
+    var animatedPlayer = ENGINE.GAME._me.animatedPlayer;
+    if (typeof (player) == _UN) return;
+    if (animatedPlayer.onAction && animatedPlayer.onAction.inventory == true) return;
     for (var i = 0; i < ENGINE.intersects.length; i++) {
       var value = ENGINE.intersects[i];
       if (value && value.object && value.object.group && value.object.group.name) {
@@ -1296,14 +1609,13 @@ ENGINE.GAME = {
     }
     var object = ENGINE.GAME.contactClick.object;
     if (object == null || typeof (object) == _UN || typeof (object.group) == _UN) return;
-    var playerdata = ENGINE.GAME._players[ENGINE.login];
     var pos = {
       x: ENGINE.GAME.contactClick.point.x,
       y: ENGINE.GAME.contactClick.point.y,
       z: ENGINE.GAME.contactClick.point.z
     };
-    var speed = typeof (playerdata.speed) == _UN ? ENGINE.GAME._speed.player : playerdata.speed;
-    var speedExtra = typeof (playerdata.speedExtra) == _UN ? 0 : playerdata.speedExtra;
+    var speed = typeof (player.speed) == _UN ? ENGINE.GAME._speed.player : player.speed;
+    var speedExtra = typeof (player.speedExtra) == _UN ? 0 : player.speedExtra;
 
     if (object.group.name == 'Tile') { //Ground Click
       var destin = {
@@ -1313,12 +1625,12 @@ ENGINE.GAME = {
         speedExtra: speedExtra,
       }
       //allow move up to 0.5 distance
-      if (ANIMATED._data[ENGINE.login].shape.position.distanceTo(new THREE.Vector3(pos.x, pos.y, pos.z)) > 0.7) {
+      if (animatedPlayer.shape.position.distanceTo(new THREE.Vector3(pos.x, pos.y, pos.z)) > 0.7) {
         ENGINE.Physic.bodyMove(
-          ANIMATED._data[ENGINE.login].shape,
+          animatedPlayer.shape,
           new THREE.Vector3(pos.x, pos.y, pos.z), (speed + speedExtra), ENGINE.login);
         if (ENGINE.GAME.lastMovTime > ENGINE.GAME._speed.clickspeed) {
-          _moveRow = { userdata: playerdata, destin: destin };
+          _moveRow = { userdata: player, destin: destin };
           ENGINE.GAME.lastMovTime = 0;
         }
       }
@@ -1329,6 +1641,7 @@ ENGINE.GAME = {
 
 
   messagew: function (received) {
+    //console.log(received);
     if (!received.data) return;
     try {
       var JSONDATA = JSON.parse(JSON.stringify(received.data));
@@ -1346,22 +1659,95 @@ ENGINE.GAME = {
 
 
   createBar: function (login) {
-    var player = ENGINE.GAME._players[login];
+    var player = this.getPlayerOrNpc(login);
+    var animatedPlayer = ENGINE.GAME.getAnimated(login);
+    /*ENGINE.GAME._players[login];
     if (typeof (player) == 'undefined') player = ENGINE.GAME._npcData[login];
+    */
     if (!player || player == null || !player.attr) return;
     if (!player.bars) player.bars = {};
+    /*
     const cssuser = document.createElement('div');
-    cssuser.className = 'cssuser';       
-    cssuser.id='cssuser'+login;
-    cssuser.innerHTML = login+`<br>
-    <progress class="healthbar" value="`+player.attr.hp+`" max="100"></progress>`;
-    $('#cssdata').append(cssuser);
+    cssuser.className = 'cssuser';
+    cssuser.id = 'cssuser' + login;//cssuser.innerHTML = login + '<br>';
+    $('#cssdata').append(cssuser);//temp hiden div
+    //lvl
+    const lvl = document.createElement('div');
+    lvl.className = 'dotlvl';
+    lvl.innerHTML = player.attr.lvl;
+    player.bars.lvl = lvl;
+    cssuser.appendChild(lvl);
+    //name
+    const name = document.createElement('div');
+    name.className = 'barname';
+    name.innerHTML = login;
+    player.bars.name = name;
+    cssuser.appendChild(name);
+    //health
+    const health = document.createElement('progress');
+    health.className = 'healthbar';
+    health.value = parseInt(player.attr.hp);
+    health.max = 100;
+    player.bars.health = health;
+    cssuser.appendChild(health);
+    //transform in 2D relative
     player.bars.div = RENDERER.css(cssuser);
-    player.bars.div.position.set(0, 1.5, 0);
-    ANIMATED._data[login].object.add(player.bars.div);
+    */
+    LOADER.textureLoader.load('/images/barbase.png', function (map) {
+      var group = new THREE.Object3D();
+      var material = new THREE.MeshBasicMaterial({ color: 'black', transparent: true });
+      var geometry = new THREE.PlaneGeometry(3.2, 0.8);
+      var plane = new THREE.Mesh(geometry, material);
+      group.add(plane);
+      plane.position.set(0, 0.4, -0.1);
+      plane.material.opacity = 0.4;
+      player.bars.box = plane;
+
+      material = new THREE.SpriteMaterial({ map: map });
+      var sprite = new THREE.Sprite(material);
+      var imageWidth = map.image.width;
+      var imageHeight = map.image.height;
+      sprite.scale.set(1 * imageWidth, 1 * imageHeight, 1.0);
+      sprite.scale.multiplyScalar(0.02);
+      material.opacity = 0.5;
+      player.bars.div = group;
+      group.add(sprite);
+
+      var mapl = LOADER.textureLoader.load('/images/barlife.png');
+      material = new THREE.SpriteMaterial({ map: mapl });
+      var sprite2 = new THREE.Sprite(material);
+      material.opacity = 0.6;
+      player.bars.hp = sprite2;
+      sprite.add(sprite2);
+      player.bars.hp.scale.x = parseInt(player.attr.hp) / 100;
+
+      var dname = 0.5;
+      var name = ENGINE.GAME.createText(login, dname, 'lime');
+      var wname = (name.geometry.boundingBox.max.x - name.geometry.boundingBox.min.x);
+      while (wname > 3.2) {
+        dname = dname - 0.05;
+        name = ENGINE.GAME.createText(login, dname, 'lime');
+        wname = (name.geometry.boundingBox.max.x - name.geometry.boundingBox.min.x);
+      }
+
+      group.add(name);
+      player.bars.name = name;
+      player.bars.name.position.y = player.bars.name.position.y + 0.15;
+
+      if (player.attr.hp <= 0) {
+        animatedPlayer.onAction.died = 1;
+        player.bars.div.visible = false;
+        ANIMATED._data[login].shape.visible = false;
+        ANIMATED._data[login].shape.userData.physicsBody.setCollisionFlags(1);
+      }
+
+      if (login != ENGINE.login)
+        ENGINE.scene.add(group);
+    });
+
   },
 
-  message: function (data) {
+  message: async function (data) {
     //player disconnect
     if (typeof (data.DISCONNECT) !== _UN) {
       if (data.DISCONNECT.login == ENGINE.login) {
@@ -1396,11 +1782,25 @@ ENGINE.GAME = {
       return;
     }
     //Try creating new login works
-    if (typeof (data.NEWLOGINVALID) !== _UN) {
+    /*if (typeof (data.NEWLOGINVALID) !== _UN) {      
+      this.message({ INVALIDLOGIN: 'XX' });
+      setTimeout(function(){
       ENGINE.DIALOG.reset();
       ENGINE.login = data.NEWLOGINVALID.login;
       ENGINE.pass = '';
-      this.message({ INVALIDLOGIN: 'XX' });
+      });
+      return;
+    }*/
+    if (typeof (data.NEWLOGVALID) !== _UN) {
+      var tmp1 = setInterval(() => {
+        ENGINE.DIALOG.reset();
+      }, 100);
+      setTimeout(function () {
+        clearInterval(tmp1);
+        ENGINE.login = data.NEWLOGVALID.login;
+        ENGINE.pass = data.NEWLOGVALID.pass1;
+        ENGINE.GAME.message({ INVALIDLOGIN: 'XX' });
+      }, 2000);
       return;
     }
     //valid login
@@ -1410,9 +1810,8 @@ ENGINE.GAME = {
         this._me = data.VALIDLOGIN;
         this._me.login = ENGINE.login;
         this.loadMap(); //if first time is Owner load map
-
       } else {
-        this.playerJoin(data.VALIDLOGIN);
+        await this.playerJoin(data.VALIDLOGIN);
       }
       return;
     }
@@ -1428,22 +1827,67 @@ ENGINE.GAME = {
       for (var i = 0; i < Object.keys(playerdata).length; i++) {
         var player = Object.keys(playerdata)[i];
         // console.log('send', data[kname].login);
-        this.playerJoin(playerdata[player]);
+        //console.log(playerdata[player]);
+        await this.playerJoin(playerdata[player]);
       }
       var npcdata = data.ONLINEPLAYERS.npcs;
       //console.log('movenpc', npcdata);
       if (npcdata && npcdata.length > 0)
         for (var i = 0; i < Object.keys(npcdata).length; i++) {
           var npcname = Object.keys(npcdata)[i];
-          console.log('npc update', npcname);
+          //console.log('npc update', npcname);
           ENGINE.GAME._npcs[npcname] = npcdata[npcname];
           if (npcdata[npcname].pos) ENGINE.GAME._npcData[npcname].pos = npcdata[npcname].pos;
           if (npcdata[npcname].qua) ENGINE.GAME._npcData[npcname].qua = npcdata[npcname].qua;
         }
       return;
     }
-    //############################ AFTER THIS ONLY WORKS IF ONLINE ######################
+    //############################ AFTER THIS ONLY WORKS IF ONLINE ######################    
     if (this._completeloaded == false) return;
+
+    //########### KILL  #####################
+    if (typeof (data.KILL) !== _UN && data.KILL.killed && data.KILL.attr && data.KILL.login) {
+      var playerdied = ENGINE.GAME.getPlayerOrNpc(data.KILL.killed);
+      var animatedPlayer = ENGINE.GAME.getAnimated(data.KILL.killed);
+      if (playerdied && playerdied.bars && playerdied.bars.hp) {
+        playerdied.bars.div.visible = false;
+        playerdied.bars.hp.scale.x = 0;
+        animatedPlayer.onAction.died = 1;
+        animatedPlayer.shape.visible = false;
+        animatedPlayer.shape.userData.physicsBody.setCollisionFlags(1);
+      }
+      var player = ENGINE.GAME.getPlayerOrNpc(data.KILL.login);
+      if (player && player.bars && player.bars.hp) {
+        player.attr.exp = data.KILL.attr.exp;
+        if (data.KILL.attr.lvl != player.attr.lvl) {
+          player.attr.lvl = data.KILL.attr.lvl;
+          //player.bars.lvl.innerText = player.attr.lvl;
+        }
+      }
+    }
+    //########### NPCREVIVE #################
+    if (typeof (data.NPCREVIVE) !== _UN && data.NPCREVIVE.active && data.NPCREVIVE.login) {
+      var player = ENGINE.GAME.getPlayerOrNpc(data.NPCREVIVE.login);
+      var animatedPlayer = ENGINE.GAME.getAnimated(data.NPCREVIVE.login);
+      if (player && player.bars && player.bars.hp) {
+        player.bars.div.visible = true;
+        player.bars.hp.scale.x = 1;
+        animatedPlayer.onAction.died = 0;
+        animatedPlayer.shape.visible = true;
+        animatedPlayer.shape.userData.physicsBody.setCollisionFlags(0);
+      }
+    }
+    //########### ATACK #####################
+    if (typeof (data.ATACK) !== _UN && data.ATACK.targets) {
+      for (var i = 0; i < Object.keys(data.ATACK.targets).length; i++) {
+        var name = Object.keys(data.ATACK.targets)[i];
+        var value = data.ATACK.targets[name];
+        var player = ENGINE.GAME.getPlayerOrNpc(name);
+        if (player && player.bars && player.bars.hp) {
+          player.bars.hp.scale.x = parseInt(value.hp) / 100;
+        }
+      }
+    }
     //########### MOVETO #############
     //click to move
     if (typeof (data.MOVETO) !== _UN) {
@@ -1484,6 +1928,15 @@ ENGINE.GAME = {
         }
       return;
     }
+    //########### NPCTELEPORT  #####################
+    if (typeof (data.NPCTELEPORT) !== _UN) {
+      if (typeof (data.NPCTELEPORT.login) == _UN || typeof (data.NPCTELEPORT.destin) == _UN) return;
+      if (data.NPCTELEPORT.login == ENGINE.login) return; //disable auto listen self moves
+      var object = ANIMATED._data[data.NPCTELEPORT.login].shape;
+      var movto =
+        new THREE.Vector3(data.NPCTELEPORT.destin.x, data.NPCTELEPORT.destin.y, data.NPCTELEPORT.destin.z);
+      ENGINE.Physic.bodyTeleport(ANIMATED._data[data.NPCTELEPORT.login].shape, movto);
+    }
     //################ NPCMOVE AI ############
     if (typeof (data.NPCMOVE) !== _UN) {
       if (typeof (data.NPCMOVE.login) == _UN || typeof (data.NPCMOVE.destin) == _UN) return;
@@ -1494,7 +1947,8 @@ ENGINE.GAME = {
       if (!object.position.y || object.position.y < -10) {//teleport buggued npc        
         ENGINE.Physic.bodyTeleport(ANIMATED._data[data.NPCMOVE.login].shape, movto);
       } else {
-        ENGINE.Physic.bodyMove(object, movto, speed, data.NPCMOVE.login);
+        if (object.position.distanceTo(movto) > 1)
+          ENGINE.Physic.bodyMove(object, movto, speed, data.NPCMOVE.login);
       }
     }
     //########### ACTION  ##################
